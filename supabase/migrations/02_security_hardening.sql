@@ -45,8 +45,10 @@ FOR EACH ROW EXECUTE FUNCTION protect_profile_privileged_columns();
 
 
 -- 2. SIẾT RLS CHO QUIZ ATTEMPTS & QUIZ ANSWERS (Critical #2)
--- Xóa policy FOR ALL cũ của học sinh
+-- Xóa policy cũ nếu có
 DROP POLICY IF EXISTS "Học sinh quản lý lượt làm của mình" ON quiz_attempts;
+DROP POLICY IF EXISTS "Học sinh xem lượt làm của mình" ON quiz_attempts;
+DROP POLICY IF EXISTS "Học sinh tạo lượt làm của mình" ON quiz_attempts;
 
 -- Học sinh chỉ được SELECT lượt làm của mình
 CREATE POLICY "Học sinh xem lượt làm của mình" ON quiz_attempts
@@ -63,8 +65,10 @@ CREATE POLICY "Học sinh tạo lượt làm của mình" ON quiz_attempts
 -- Việc cập nhật điểm (score), trạng thái (status = 'SUBMITTED'/'GRADED'), 
 -- thời gian nộp (submitted_at) chỉ được thực hiện bởi Edge Function (Service Role Key).
 
--- Siết quiz_answers: Xóa policy FOR ALL cũ
+-- Siết quiz_answers: Xóa policy cũ
 DROP POLICY IF EXISTS "Học sinh ghi câu trả lời của mình" ON quiz_answers;
+DROP POLICY IF EXISTS "Học sinh xem câu trả lời của mình" ON quiz_answers;
+DROP POLICY IF EXISTS "Học sinh tạo câu trả lời của mình" ON quiz_answers;
 
 CREATE POLICY "Học sinh xem câu trả lời của mình" ON quiz_answers
   FOR SELECT USING (
@@ -85,6 +89,9 @@ CREATE POLICY "Học sinh tạo câu trả lời của mình" ON quiz_answers
 
 -- 3. SIẾT RLS CHO ASSIGNMENT SUBMISSIONS & KIỂM TRA ALLOW_LATE_SUBMISSION (Critical #2 & Logic)
 DROP POLICY IF EXISTS "Học sinh nộp & xem bài của mình" ON assignment_submissions;
+DROP POLICY IF EXISTS "Học sinh xem bài nộp của mình" ON assignment_submissions;
+DROP POLICY IF EXISTS "Học sinh nộp bài đúng hạn hoặc được phép trễ" ON assignment_submissions;
+DROP POLICY IF EXISTS "Học sinh chỉnh sửa nội dung bài nộp" ON assignment_submissions;
 
 -- Học sinh xem bài nộp của mình
 CREATE POLICY "Học sinh xem bài nộp của mình" ON assignment_submissions
@@ -104,15 +111,16 @@ CREATE POLICY "Học sinh nộp bài đúng hạn hoặc được phép trễ" O
     )
   );
 
--- Học sinh cập nhật bài nộp (chỉ khi bài chưa được chấm điểm và chưa khóa)
+-- Học sinh cập nhật bài nộp (chỉ khi bài chưa được chấm điểm và đúng hạn / cho phép nộp muộn)
 CREATE POLICY "Học sinh chỉnh sửa nội dung bài nộp" ON assignment_submissions
   FOR UPDATE USING (
     student_id = requesting_user_id() 
-    AND (status = 'SUBMITTED' OR status = 'PENDING')
+    AND status = 'SUBMITTED'
     AND score IS NULL
   )
   WITH CHECK (
     student_id = requesting_user_id()
+    AND status = 'SUBMITTED'
     AND score IS NULL
     AND feedback IS NULL
     AND EXISTS (
@@ -125,6 +133,7 @@ CREATE POLICY "Học sinh chỉnh sửa nội dung bài nộp" ON assignment_sub
 
 -- 4. CHỐNG SELF-APPROVAL TRÊN TUTOR_APPLICATIONS (Medium #1)
 DROP POLICY IF EXISTS "User tạo đơn" ON tutor_applications;
+DROP POLICY IF EXISTS "User tạo đơn chờ duyệt" ON tutor_applications;
 CREATE POLICY "User tạo đơn chờ duyệt" ON tutor_applications
   FOR INSERT WITH CHECK (
     user_id = requesting_user_id()
@@ -173,6 +182,12 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
+-- Helper function: is_tutor()
+CREATE OR REPLACE FUNCTION is_tutor() RETURNS boolean AS $$
+  SELECT get_my_role() = 'tutor';
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+
 -- 6. STORAGE BUCKET POLICIES (Medium #2)
 -- Tạo bucket nếu chưa tồn tại
 INSERT INTO storage.buckets (id, name, public)
@@ -191,7 +206,7 @@ DROP POLICY IF EXISTS "Gia sư upload thumbnails" ON storage.objects;
 CREATE POLICY "Gia sư upload thumbnails" ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'class-thumbnails' 
-    AND (requesting_user_id() IS NOT NULL)
+    AND (public.requesting_user_id() IS NOT NULL)
   );
 
 -- Policies cho bucket materials (Gia sư toàn quyền, học sinh chỉ đọc)
@@ -199,14 +214,14 @@ DROP POLICY IF EXISTS "Gia sư quản lý materials" ON storage.objects;
 CREATE POLICY "Gia sư quản lý materials" ON storage.objects
   FOR ALL USING (
     bucket_id = 'materials' 
-    AND (is_tutor() OR is_admin())
+    AND (public.is_tutor() OR public.is_admin())
   );
 
 DROP POLICY IF EXISTS "Học sinh đọc materials qua signed url" ON storage.objects;
 CREATE POLICY "Học sinh đọc materials qua signed url" ON storage.objects
   FOR SELECT USING (
     bucket_id = 'materials' 
-    AND requesting_user_id() IS NOT NULL
+    AND public.requesting_user_id() IS NOT NULL
   );
 
 -- Policies cho bucket submissions (Học sinh upload bài, gia sư xem bài)
@@ -214,12 +229,12 @@ DROP POLICY IF EXISTS "Học sinh upload submissions" ON storage.objects;
 CREATE POLICY "Học sinh upload submissions" ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'submissions' 
-    AND requesting_user_id() IS NOT NULL
+    AND public.requesting_user_id() IS NOT NULL
   );
 
 DROP POLICY IF EXISTS "Học sinh và gia sư xem submissions" ON storage.objects;
 CREATE POLICY "Học sinh và gia sư xem submissions" ON storage.objects
   FOR SELECT USING (
     bucket_id = 'submissions' 
-    AND requesting_user_id() IS NOT NULL
+    AND public.requesting_user_id() IS NOT NULL
   );
