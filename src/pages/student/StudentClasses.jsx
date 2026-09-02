@@ -14,11 +14,13 @@ import {
   Play
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ErrorState, FormField } from '../../components/common';
 
 export const StudentClasses = () => {
   const { supabaseClient, user } = useAppAuth();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [classCode, setClassCode] = useState('');
   const [joinLoading, setJoinLoading] = useState(false);
@@ -28,6 +30,7 @@ export const StudentClasses = () => {
   const fetchEnrolledClasses = async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const { data, error } = await supabaseClient
         .from('class_members')
         .select(`
@@ -54,6 +57,7 @@ export const StudentClasses = () => {
       setClasses(data?.map((m) => m.classes).filter(Boolean) || []);
     } catch (err) {
       console.error('Error fetching student classes:', err);
+      setFetchError(err.message || 'Không thể tải danh sách lớp học.');
     } finally {
       setLoading(false);
     }
@@ -112,6 +116,8 @@ export const StudentClasses = () => {
         <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
           Đang tải danh sách lớp học...
         </div>
+      ) : fetchError ? (
+        <ErrorState message={fetchError} onRetry={fetchEnrolledClasses} />
       ) : classes.length === 0 ? (
         <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
           <GraduationCap size={48} color="var(--primary-400)" style={{ margin: '0 auto 12px' }} />
@@ -242,6 +248,8 @@ export const StudentClasses = () => {
           }}>
             <button
               onClick={() => setIsJoinOpen(false)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -288,30 +296,20 @@ export const StudentClasses = () => {
                   </div>
                 )}
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                    Mã lớp (Class Code) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={classCode}
-                    onChange={(e) => setClassCode(e.target.value.toUpperCase())}
-                    placeholder="VD: CLASS-ABC123"
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-subtle)',
-                      backgroundColor: 'var(--bg-page)',
-                      color: 'var(--text-primary)',
-                      fontSize: '1rem',
-                      fontWeight: '700',
-                      letterSpacing: '0.05em',
-                      textTransform: 'uppercase'
-                    }}
-                  />
-                </div>
+                <FormField
+                  id="student-join-class-code"
+                  label="Mã lớp (Class Code)"
+                  required
+                  value={classCode}
+                  onChange={(e) => setClassCode(e.target.value.toUpperCase())}
+                  placeholder="VD: CLASS-ABC123"
+                  inputStyle={{
+                    fontSize: '1rem',
+                    fontWeight: '700',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                  }}
+                />
 
                 <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                   <button type="button" className="btn btn-secondary" onClick={() => setIsJoinOpen(false)} style={{ flex: 1 }}>

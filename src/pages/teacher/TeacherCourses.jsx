@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAppAuth } from '../../context/AuthContext';
 import { 
-  BookOpen, 
   Plus, 
   Layers, 
   FileText, 
@@ -11,12 +10,14 @@ import {
   FolderOpen
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ErrorState, FormField } from '../../components/common';
 
 export const TeacherCourses = () => {
   const { supabaseClient, user } = useAppAuth();
   const [courses, setCourses] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   // Form state
@@ -31,6 +32,7 @@ export const TeacherCourses = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       // 1. Fetch tutor's classes
       const { data: classList } = await supabaseClient
         .from('classes')
@@ -59,6 +61,7 @@ export const TeacherCourses = () => {
       setCourses(courseList || []);
     } catch (err) {
       console.error('Error fetching courses:', err);
+      setFetchError(err.message || 'Không thể tải danh sách khóa học.');
     } finally {
       setLoading(false);
     }
@@ -142,6 +145,8 @@ export const TeacherCourses = () => {
         <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
           Đang tải danh sách khóa học...
         </div>
+      ) : fetchError ? (
+        <ErrorState message={fetchError} onRetry={fetchData} />
       ) : courses.length === 0 ? (
         <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
           <FolderOpen size={48} color="var(--primary-400)" style={{ margin: '0 auto 12px' }} />
@@ -234,6 +239,8 @@ export const TeacherCourses = () => {
           }}>
             <button
               onClick={() => setIsCreateOpen(false)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -269,93 +276,49 @@ export const TeacherCourses = () => {
                 </div>
               )}
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Chọn Lớp học *
-                </label>
-                <select
-                  value={classId}
-                  onChange={(e) => setClassId(e.target.value)}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)',
-                    color: 'var(--text-primary)'
-                  }}
-                >
-                  {classes.map((cls) => (
-                    <option key={cls.id} value={cls.id}>
-                      {cls.name} ({cls.subject})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <FormField
+                id="course-class-select"
+                label="Chọn Lớp học"
+                type="select"
+                required
+                value={classId}
+                onChange={(e) => setClassId(e.target.value)}
+                options={classes.map((cls) => ({
+                  value: cls.id,
+                  label: `${cls.name} (${cls.subject})`,
+                }))}
+              />
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Tiêu đề Khóa học *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="VD: Chuyên đề Đại số & Giải tích 12"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-              </div>
+              <FormField
+                id="course-title"
+                label="Tiêu đề Khóa học"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="VD: Chuyên đề Đại số & Giải tích 12"
+              />
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Mô tả khóa học
-                </label>
-                <textarea
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Mô tả nội dung, lộ trình học tập..."
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)',
-                    color: 'var(--text-primary)',
-                    resize: 'vertical'
-                  }}
-                />
-              </div>
+              <FormField
+                id="course-description"
+                label="Mô tả khóa học"
+                type="textarea"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Mô tả nội dung, lộ trình học tập..."
+              />
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Trạng thái phát hành
-                </label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)',
-                    color: 'var(--text-primary)'
-                  }}
-                >
-                  <option value="PUBLISHED">Công khai (PUBLISHED) - Học sinh thấy ngay</option>
-                  <option value="DRAFT">Bản nháp (DRAFT) - Ẩn với học sinh</option>
-                </select>
-              </div>
+              <FormField
+                id="course-status"
+                label="Trạng thái phát hành"
+                type="select"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                options={[
+                  { value: 'PUBLISHED', label: 'Công khai (PUBLISHED) - Học sinh thấy ngay' },
+                  { value: 'DRAFT', label: 'Bản nháp (DRAFT) - Ẩn với học sinh' },
+                ]}
+              />
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsCreateOpen(false)} style={{ flex: 1 }}>

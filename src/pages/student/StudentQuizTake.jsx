@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAppAuth } from '../../context/AuthContext';
 import { 
   Clock, 
@@ -8,9 +8,7 @@ import {
   ArrowLeft, 
   ArrowRight, 
   Send, 
-  AlertCircle, 
-  HelpCircle,
-  Sparkles
+  AlertCircle 
 } from 'lucide-react';
 
 export const StudentQuizTake = () => {
@@ -42,105 +40,84 @@ export const StudentQuizTake = () => {
       setLoading(true);
       setError(null);
 
-      // 1. Fetch quiz info
-      const { data: qData, error: qErr } = await supabaseClient
-        .from('quizzes')
-        .select('*')
-        .eq('id', quizId)
-        .single();
-
-      if (qErr) throw qErr;
-      setQuiz(qData);
-
-      // 2. Fetch or create attempt
-      const { data: existingAttempts } = await supabaseClient
-        .from('quiz_attempts')
-        .select('*')
-        .eq('quiz_id', quizId)
-        .eq('student_id', user.id)
-        .order('attempt_number', { ascending: false });
-
-      let currentAttempt = existingAttempts?.find((a) => a.status === 'IN_PROGRESS' || a.status === 'NOT_STARTED');
-
-      if (!currentAttempt) {
-        const attemptCount = existingAttempts?.length || 0;
-        if (attemptCount >= (qData.max_attempts || 1)) {
-          throw new Error(`Bạn đã hoàn thành tối đa ${qData.max_attempts || 1} lượt làm bài.`);
-        }
-
-        const { data: newAtt, error: attErr } = await supabaseClient
-          .from('quiz_attempts')
-          .insert({
-            quiz_id: quizId,
-            student_id: user.id,
-            attempt_number: attemptCount + 1,
-            status: 'IN_PROGRESS',
-            started_at: new Date().toISOString(),
-          })
-          .select()
-          .single();
-
-        if (attErr) throw attErr;
-        currentAttempt = newAtt;
-      }
-
-      setAttempt(currentAttempt);
-
-      // 3. Fetch questions with answer options (Excluding is_correct)
-      const { data: qqList, error: qqErr } = await supabaseClient
-        .from('quiz_questions')
-        .select(`
-          order_index,
-          points_override,
-          questions (
-            id,
-            type,
-            content,
-            points,
-            answer_options (
-              id,
-              content,
-              order_index
-            )
-          )
-        `)
-        .eq('quiz_id', quizId)
-        .order('order_index', { ascending: true });
-
-      if (qqErr) throw qqErr;
-
-      const loadedQuestions = (qqList || []).map((qq) => {
-        const q = qq.questions;
-        const opts = (q.answer_options || []).sort((a, b) => a.order_index - b.order_index);
-        return {
-          id: q.id,
-          type: q.type,
-          content: q.content,
-          points: qq.points_override || q.points || 1,
-          options: opts,
-        };
+      // 1. Gọi Edge Function bảo mật get-quiz-for-attempt (ẩn hoàn toàn is_correct)
+      const { data: edgeData, error: funcErr } = await supabaseClient.functions.invoke('get-quiz-for-attempt', {
+        body: { quizId },
       });
 
-      setQuestions(loadedQuestions);
+      if (funcErr) throw funcErr;
+      if (edgeData?.error) throw new Error(edgeData.error);
 
-      // 4. Initialize timer
-      if (qData.time_limit_minutes && qData.time_limit_minutes > 0) {
-        const startTime = new Date(currentAttempt.started_at).getTime();
-        const totalDurationMs = qData.time_limit_minutes * 60 * 1000;
+      setQuiz(edgeData.quiz);
+      setAttempt(edgeData.attempt);
+      setQuestions(edgeData.questions || []);
+
+      // 2. Khởi tạo đồng hồ đếm ngược nếu có giới hạn thời gian
+      if (edgeData.quiz.time_limit_minutes && edgeData.quiz.time_limit_minutes > 0) {
+        const startTime = new Date(edgeData.attempt.started_at).getTime();
+        const totalDurationMs = edgeData.quiz.time_limit_minutes * 60 * 1000;
         const elapsedMs = Date.now() - startTime;
         const remainingSeconds = Math.max(0, Math.round((totalDurationMs - elapsedMs) / 1000));
         setTimeLeft(remainingSeconds);
       }
     } catch (err) {
       console.error('Error starting quiz:', err);
-      setError(err.message);
+      setError(err.message || 'Không thể tải đề kiểm tra.');
     } finally {
       setLoading(false);
     }
   };
 
+  const submitQuizToServer = async (isAutoSubmit = false) => {
+    if (submitting || result || !attempt?.id) return;
+
+    if (!isAutoSubmit) {
+      if (!window.confirm('Bạn có chắc muốn nộp bài thi không?')) return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const answersPayload = questions.map((q) => ({
+        question_id: q.id,
+        selected_option_ids: answers[q.id]?.selected_option_ids || [],
+        text_answer: answers[q.id]?.text_answer || '',
+      }));
+
+      // Gọi Edge Function submit-quiz-attempt để chấm điểm server-side
+      const { data: submitData, error: submitErr } = await supabaseClient.functions.invoke('submit-quiz-attempt', {
+        body: {
+          attemptId: attempt.id,
+          answers: answersPayload,
+        },
+      });
+
+      if (submitErr) throw submitErr;
+      if (submitData?.error) throw new Error(submitData.error);
+
+      setResult({
+        score: submitData.score,
+        status: submitData.status,
+        passed: submitData.passed,
+        passScore: submitData.passScore,
+        showAnswers: submitData.showAnswers,
+        detailedResults: submitData.results || [],
+      });
+    } catch (err) {
+      console.error('Error submitting quiz:', err);
+      setError(err.message || 'Đã có lỗi xảy ra khi nộp bài thi.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmitQuiz = () => {
+    submitQuizToServer(false);
+  };
+
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && quizId) {
       startOrResumeQuiz();
     }
   }, [quizId, user?.id, supabaseClient]);
@@ -153,7 +130,7 @@ export const StudentQuizTake = () => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          handleSubmitQuiz(); // Auto-submit when time expires
+          submitQuizToServer(true); // Auto-submit when time expires
           return 0;
         }
         return prev - 1;
@@ -163,7 +140,7 @@ export const StudentQuizTake = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [timeLeft, result]);
+  }, [timeLeft, result, attempt?.id, questions, answers]);
 
   const handleSelectOption = (qId, optionId, isMultiple) => {
     setAnswers((prev) => {
@@ -180,7 +157,10 @@ export const StudentQuizTake = () => {
       }
       return {
         ...prev,
-        [qId]: { ...current, selected_option_ids: newIds },
+        [qId]: {
+          ...current,
+          selected_option_ids: newIds,
+        },
       };
     });
   };
@@ -193,129 +173,6 @@ export const StudentQuizTake = () => {
         text_answer: val,
       },
     }));
-  };
-
-  const handleSubmitQuiz = async () => {
-    if (submitting || result) return;
-
-    if (!window.confirm('Bạn có chắc muốn nộp bài thi không?')) return;
-
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      const answersPayload = questions.map((q) => ({
-        question_id: q.id,
-        selected_option_ids: answers[q.id]?.selected_option_ids || [],
-        text_answer: answers[q.id]?.text_answer || '',
-      }));
-
-      // Calculate score & record in Supabase
-      const { data: dbQuestions } = await supabaseClient
-        .from('questions')
-        .select('id, type, points, explanation, accepted_answers, answer_options(*)')
-        .in('id', questions.map((q) => q.id));
-
-      const qMap = new Map((dbQuestions || []).map((q) => [q.id, q]));
-      let earnedPoints = 0;
-      let totalMaxPoints = 0;
-      let hasEssay = false;
-      const answerRows = [];
-      const detailedResults = [];
-
-      for (const ans of answersPayload) {
-        const q = qMap.get(ans.question_id);
-        if (!q) continue;
-
-        const qPoints = Number(q.points) || 1;
-        totalMaxPoints += qPoints;
-        let isCorrect = false;
-        let pAwarded = 0;
-
-        if (q.type === 'multiple_choice' || q.type === 'true_false') {
-          const correctOpt = q.answer_options.find((o) => o.is_correct);
-          if (correctOpt && ans.selected_option_ids[0] === correctOpt.id) {
-            isCorrect = true;
-            pAwarded = qPoints;
-          }
-        } else if (q.type === 'multiple_select') {
-          const correctIds = q.answer_options.filter((o) => o.is_correct).map((o) => o.id).sort();
-          const chosenIds = (ans.selected_option_ids || []).slice().sort();
-          if (correctIds.length === chosenIds.length && correctIds.every((id, i) => id === chosenIds[i])) {
-            isCorrect = true;
-            pAwarded = qPoints;
-          }
-        } else if (q.type === 'fill_blank') {
-          const text = (ans.text_answer || '').trim().toLowerCase();
-          const accepted = (q.accepted_answers || []).map((a) => a.trim().toLowerCase());
-          if (accepted.includes(text)) {
-            isCorrect = true;
-            pAwarded = qPoints;
-          }
-        } else if (q.type === 'essay') {
-          hasEssay = true;
-          isCorrect = null;
-          pAwarded = null;
-        }
-
-        if (pAwarded) earnedPoints += pAwarded;
-
-        answerRows.push({
-          attempt_id: attempt.id,
-          question_id: q.id,
-          selected_option_ids: ans.selected_option_ids,
-          text_answer: ans.text_answer,
-          is_correct: isCorrect,
-          points_awarded: pAwarded,
-        });
-
-        detailedResults.push({
-          question_id: q.id,
-          content: q.content,
-          is_correct: isCorrect,
-          points_awarded: pAwarded,
-          max_points: qPoints,
-          explanation: q.explanation,
-          correct_options: q.answer_options.filter((o) => o.is_correct).map((o) => o.content),
-          user_answer: ans.text_answer || ans.selected_option_ids,
-        });
-      }
-
-      const finalScore = totalMaxPoints > 0 
-        ? Number(((earnedPoints / totalMaxPoints) * 10).toFixed(2)) 
-        : earnedPoints;
-
-      const finalStatus = hasEssay ? 'PENDING_GRADING' : 'GRADED';
-
-      // Insert quiz answers
-      if (answerRows.length > 0) {
-        await supabaseClient.from('quiz_answers').insert(answerRows);
-      }
-
-      // Update attempt
-      await supabaseClient
-        .from('quiz_attempts')
-        .update({
-          score: finalScore,
-          status: finalStatus,
-          submitted_at: new Date().toISOString(),
-        })
-        .eq('id', attempt.id);
-
-      setResult({
-        score: finalScore,
-        status: finalStatus,
-        passed: finalScore >= (quiz.pass_score || 5.0),
-        passScore: quiz.pass_score || 5.0,
-        showAnswers: quiz.show_answer_after_submit,
-        detailedResults,
-      });
-    } catch (err) {
-      console.error('Error submitting quiz:', err);
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   const formatTimer = (seconds) => {

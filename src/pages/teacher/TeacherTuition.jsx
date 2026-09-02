@@ -3,7 +3,6 @@ import { useAppAuth } from '../../context/AuthContext';
 import { 
   CreditCard, 
   Plus, 
-  DollarSign, 
   Clock, 
   CheckCircle2, 
   AlertCircle, 
@@ -15,6 +14,8 @@ import {
   TrendingUp,
   Receipt
 } from 'lucide-react';
+import { formatCurrency, formatDate } from '../../lib/formatters';
+import { ErrorState, FormField } from '../../components/common';
 
 export const TeacherTuition = () => {
   const { supabaseClient, user } = useAppAuth();
@@ -23,6 +24,7 @@ export const TeacherTuition = () => {
   const [selectedClassId, setSelectedClassId] = useState('');
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
@@ -46,6 +48,7 @@ export const TeacherTuition = () => {
   const fetchClassesAndInvoices = async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const { data: classList } = await supabaseClient
         .from('classes')
         .select('id, name, subject')
@@ -81,6 +84,7 @@ export const TeacherTuition = () => {
       }
     } catch (err) {
       console.error('Error fetching tuition data:', err);
+      setFetchError(err.message || 'Không thể tải dữ liệu học phí.');
     } finally {
       setLoading(false);
     }
@@ -211,7 +215,7 @@ export const TeacherTuition = () => {
           <div>
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>ĐÃ THU ĐƯỢC</span>
             <h3 style={{ fontSize: '1.375rem', fontWeight: '800', color: 'var(--success-600)' }}>
-              {totalCollected.toLocaleString('vi-VN')} đ
+              {formatCurrency(totalCollected)}
             </h3>
           </div>
         </div>
@@ -223,7 +227,7 @@ export const TeacherTuition = () => {
           <div>
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>CHƯA THU / CÒN NỢ</span>
             <h3 style={{ fontSize: '1.375rem', fontWeight: '800', color: 'var(--primary-600)' }}>
-              {totalPending.toLocaleString('vi-VN')} đ
+              {formatCurrency(totalPending)}
             </h3>
           </div>
         </div>
@@ -255,16 +259,18 @@ export const TeacherTuition = () => {
       }}>
         {classes.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Lớp:</span>
+            <label htmlFor="tuition-class-select" style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Lớp:</label>
             <select
+              id="tuition-class-select"
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
               style={{
-                padding: '6px 12px',
+                padding: '8px 12px',
                 borderRadius: 'var(--radius-sm)',
                 border: '1px solid var(--border-subtle)',
                 backgroundColor: 'var(--bg-page)',
                 color: 'var(--text-primary)',
+                fontSize: '0.875rem',
                 fontWeight: '600'
               }}
             >
@@ -277,21 +283,43 @@ export const TeacherTuition = () => {
           </div>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, maxWidth: '280px' }}>
-          <Search size={16} color="var(--text-muted)" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm theo tên học sinh..."
+        <div style={{ display: 'flex', gap: '8px', flex: 1, maxWidth: '480px', justifyContent: 'flex-end' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              aria-label="Tìm kiếm học sinh hoặc kỳ học phí"
+              placeholder="Tìm theo tên học sinh, kỳ học phí..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px 8px 36px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'var(--bg-page)',
+                fontSize: '0.875rem'
+              }}
+            />
+          </div>
+
+          <select
+            aria-label="Lọc theo trạng thái thanh toán"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
             style={{
-              border: 'none',
-              outline: 'none',
-              backgroundColor: 'transparent',
-              fontSize: '0.875rem',
-              width: '100%'
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border-subtle)',
+              backgroundColor: 'var(--bg-page)',
+              fontSize: '0.875rem'
             }}
-          />
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="UNPAID">Chưa thu</option>
+            <option value="PAID">Đã thu đủ</option>
+            <option value="OVERDUE">Quá hạn</option>
+          </select>
         </div>
       </div>
 
@@ -300,6 +328,8 @@ export const TeacherTuition = () => {
         <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
           Đang tải danh sách học phí...
         </div>
+      ) : fetchError ? (
+        <ErrorState message={fetchError} onRetry={fetchClassesAndInvoices} />
       ) : filteredInvoices.length === 0 ? (
         <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
           <CreditCard size={48} color="var(--primary-400)" style={{ margin: '0 auto 12px' }} />
@@ -347,10 +377,10 @@ export const TeacherTuition = () => {
                       {inv.period}
                     </td>
                     <td style={{ padding: '14px 16px', fontWeight: '700', color: 'var(--text-primary)' }}>
-                      {Number(inv.amount_due).toLocaleString('vi-VN')} đ
+                      {formatCurrency(inv.amount_due)}
                     </td>
                     <td style={{ padding: '14px 16px', color: 'var(--success-600)', fontWeight: '600' }}>
-                      {Number(inv.amount_paid || 0).toLocaleString('vi-VN')} đ
+                      {formatCurrency(inv.amount_paid || 0)}
                     </td>
                     <td style={{ padding: '14px 16px' }}>
                       <span className={`badge ${
@@ -360,7 +390,7 @@ export const TeacherTuition = () => {
                       </span>
                     </td>
                     <td style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '0.8125rem' }}>
-                      {inv.due_date ? new Date(inv.due_date).toLocaleDateString('vi-VN') : '—'}
+                      {formatDate(inv.due_date)}
                     </td>
                     <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                       {!isPaid && (
@@ -403,6 +433,8 @@ export const TeacherTuition = () => {
           }}>
             <button
               onClick={() => setIsCreateOpen(false)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -439,9 +471,9 @@ export const TeacherTuition = () => {
               )}
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
+                <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px', color: 'var(--text-primary)' }}>
                   Áp dụng cho
-                </label>
+                </span>
                 <div style={{ display: 'flex', gap: '16px' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.875rem' }}>
                     <input
@@ -458,67 +490,33 @@ export const TeacherTuition = () => {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                    Kì thu học phí *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={period}
-                    onChange={(e) => setPeriod(e.target.value)}
-                    placeholder="VD: Tháng 09/2026"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-subtle)',
-                      backgroundColor: 'var(--bg-page)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                </div>
+                <FormField
+                  id="tuition-period"
+                  label="Kì thu học phí"
+                  required
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  placeholder="VD: Tháng 09/2026"
+                />
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                    Số tiền (VNĐ) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    step="10000"
-                    value={amountDue}
-                    onChange={(e) => setAmountDue(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-subtle)',
-                      backgroundColor: 'var(--bg-page)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Hạn nộp học phí
-                </label>
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)',
-                    color: 'var(--text-primary)'
-                  }}
+                <FormField
+                  id="tuition-amount"
+                  label="Số tiền (VNĐ)"
+                  type="number"
+                  required
+                  step="10000"
+                  value={amountDue}
+                  onChange={(e) => setAmountDue(e.target.value)}
                 />
               </div>
+
+              <FormField
+                id="tuition-due-date"
+                label="Hạn nộp học phí"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsCreateOpen(false)} style={{ flex: 1 }}>
@@ -555,6 +553,8 @@ export const TeacherTuition = () => {
           }}>
             <button
               onClick={() => setActiveInvoiceForPayment(null)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -576,54 +576,35 @@ export const TeacherTuition = () => {
                 </p>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Số tiền thu lần này (VNĐ) *
-                </label>
-                <input
-                  type="number"
-                  required
-                  step="10000"
-                  value={paidAmountInput}
-                  onChange={(e) => setPaidAmountInput(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)',
-                    fontSize: '1.125rem',
-                    fontWeight: '700',
-                    color: 'var(--success-600)'
-                  }}
-                />
-              </div>
+              <FormField
+                id="payment-paid-amount"
+                label="Số tiền thu lần này (VNĐ)"
+                type="number"
+                required
+                step="10000"
+                value={paidAmountInput}
+                onChange={(e) => setPaidAmountInput(e.target.value)}
+                inputStyle={{
+                  fontSize: '1.125rem',
+                  fontWeight: '700',
+                  color: 'var(--success-600)',
+                }}
+              />
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Ghi chú (Tiền mặt, chuyển khoản...)
-                </label>
-                <input
-                  type="text"
-                  value={paymentNote}
-                  onChange={(e) => setPaymentNote(e.target.value)}
-                  placeholder="VD: Chuyển khoản ngân hàng MBBank"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)'
-                  }}
-                />
-              </div>
+              <FormField
+                id="payment-note"
+                label="Ghi chú (Tiền mặt, chuyển khoản...)"
+                placeholder="VD: Chuyển khoản Techcombank 10/09"
+                value={paymentNote}
+                onChange={(e) => setPaymentNote(e.target.value)}
+              />
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setActiveInvoiceForPayment(null)} style={{ flex: 1 }}>
                   Hủy
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={payLoading} style={{ flex: 1 }}>
-                  {payLoading ? 'Đang lưu...' : 'Xác nhận đã thu'}
+                  {payLoading ? 'Đang lưu...' : 'Xác nhận thu tiền'}
                 </button>
               </div>
             </form>

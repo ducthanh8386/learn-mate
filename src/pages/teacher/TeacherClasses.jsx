@@ -12,11 +12,13 @@ import {
   X,
   AlertCircle
 } from 'lucide-react';
+import { ErrorState, FormField } from '../../components/common';
 
 export const TeacherClasses = () => {
   const { supabaseClient, user } = useAppAuth();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(null);
 
@@ -32,6 +34,7 @@ export const TeacherClasses = () => {
   const fetchClasses = async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const { data, error } = await supabaseClient
         .from('classes')
         .select(`
@@ -44,6 +47,7 @@ export const TeacherClasses = () => {
       setClasses(data || []);
     } catch (err) {
       console.error('Error fetching classes:', err);
+      setFetchError(err.message || 'Không thể tải danh sách lớp học.');
     } finally {
       setLoading(false);
     }
@@ -54,7 +58,14 @@ export const TeacherClasses = () => {
   }, [supabaseClient]);
 
   const generateClassCode = () => {
-    return `CLASS-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const array = new Uint8Array(6);
+    crypto.getRandomValues(array);
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars[array[i] % chars.length];
+    }
+    return `CLASS-${code}`;
   };
 
   const handleCreateClass = async (e) => {
@@ -135,6 +146,8 @@ export const TeacherClasses = () => {
         <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
           Đang tải danh sách lớp học...
         </div>
+      ) : fetchError ? (
+        <ErrorState message={fetchError} onRetry={fetchClasses} />
       ) : classes.length === 0 ? (
         <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
           <Users size={48} color="var(--primary-400)" style={{ margin: '0 auto 12px' }} />
@@ -253,6 +266,8 @@ export const TeacherClasses = () => {
           }}>
             <button
               onClick={() => setIsCreateOpen(false)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -288,110 +303,53 @@ export const TeacherClasses = () => {
                 </div>
               )}
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Tên lớp học *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="VD: Lớp Toán 12 - Luyện Đề VIP"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-              </div>
+              <FormField
+                id="create-class-name"
+                label="Tên lớp học"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="VD: Lớp Toán 12 - Luyện Đề VIP"
+              />
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Môn học *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="VD: Toán học / Hóa học / Tiếng Anh"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-              </div>
+              <FormField
+                id="create-class-subject"
+                label="Môn học"
+                required
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="VD: Toán học / Hóa học / Tiếng Anh"
+              />
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                    Sĩ số tối đa
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="500"
-                    value={maxStudents}
-                    onChange={(e) => setMaxStudents(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-subtle)',
-                      backgroundColor: 'var(--bg-page)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                    Lịch học dự kiến
-                  </label>
-                  <input
-                    type="text"
-                    value={scheduleText}
-                    onChange={(e) => setScheduleText(e.target.value)}
-                    placeholder="VD: T3 - T5 (19h30)"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-subtle)',
-                      backgroundColor: 'var(--bg-page)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                </div>
-              </div>
+                <FormField
+                  id="create-class-max-students"
+                  label="Sĩ số tối đa"
+                  type="number"
+                  min="1"
+                  max="500"
+                  value={maxStudents}
+                  onChange={(e) => setMaxStudents(e.target.value)}
+                />
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Mô tả lớp học
-                </label>
-                <textarea
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Mô tả mục tiêu, đối tượng học sinh của lớp..."
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)',
-                    color: 'var(--text-primary)',
-                    resize: 'vertical'
-                  }}
+                <FormField
+                  id="create-class-schedule"
+                  label="Lịch học dự kiến"
+                  value={scheduleText}
+                  onChange={(e) => setScheduleText(e.target.value)}
+                  placeholder="VD: T3 - T5 (19h30)"
                 />
               </div>
+
+              <FormField
+                id="create-class-description"
+                label="Mô tả lớp học"
+                type="textarea"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Mô tả mục tiêu, đối tượng học sinh của lớp..."
+              />
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsCreateOpen(false)} style={{ flex: 1 }}>

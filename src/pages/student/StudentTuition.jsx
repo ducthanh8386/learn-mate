@@ -4,20 +4,22 @@ import {
   CreditCard, 
   Clock, 
   CheckCircle2, 
-  AlertCircle, 
-  Receipt,
-  DollarSign
+  Receipt 
 } from 'lucide-react';
+import { formatCurrency, formatDate } from '../../lib/formatters';
+import { ErrorState } from '../../components/common';
 
 export const StudentTuition = () => {
   const { supabaseClient, user } = useAppAuth();
 
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
 
   const fetchTuition = async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const { data, error } = await supabaseClient
         .from('tuition_invoices')
         .select(`
@@ -31,6 +33,7 @@ export const StudentTuition = () => {
       setInvoices(data || []);
     } catch (err) {
       console.error('Error fetching student tuition:', err);
+      setFetchError(err.message || 'Không thể tải thông tin học phí.');
     } finally {
       setLoading(false);
     }
@@ -65,7 +68,7 @@ export const StudentTuition = () => {
           <div>
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>TỔNG ĐÃ THANH TOÁN</span>
             <h3 style={{ fontSize: '1.375rem', fontWeight: '800', color: 'var(--success-600)' }}>
-              {totalPaid.toLocaleString('vi-VN')} đ
+              {formatCurrency(totalPaid)}
             </h3>
           </div>
         </div>
@@ -77,7 +80,7 @@ export const StudentTuition = () => {
           <div>
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>CẦN THANH TOÁN</span>
             <h3 style={{ fontSize: '1.375rem', fontWeight: '800', color: totalPending > 0 ? 'var(--primary-600)' : 'var(--text-muted)' }}>
-              {totalPending.toLocaleString('vi-VN')} đ
+              {formatCurrency(totalPending)}
             </h3>
           </div>
         </div>
@@ -88,6 +91,8 @@ export const StudentTuition = () => {
         <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
           Đang tải thông tin học phí...
         </div>
+      ) : fetchError ? (
+        <ErrorState message={fetchError} onRetry={fetchTuition} />
       ) : invoices.length === 0 ? (
         <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
           <CreditCard size={48} color="var(--primary-400)" style={{ margin: '0 auto 12px' }} />
@@ -131,13 +136,13 @@ export const StudentTuition = () => {
                 }}>
                   <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Số tiền:</span>
                   <span style={{ fontSize: '1.125rem', fontWeight: '800', color: 'var(--text-primary)' }}>
-                    {Number(inv.amount_due).toLocaleString('vi-VN')} đ
+                    {formatCurrency(inv.amount_due)}
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
                   <Clock size={14} />
-                  <span>Hạn đóng: {inv.due_date ? new Date(inv.due_date).toLocaleDateString('vi-VN') : 'Không hạn'}</span>
+                  <span>Hạn đóng: {formatDate(inv.due_date)}</span>
                 </div>
 
                 {inv.note && (

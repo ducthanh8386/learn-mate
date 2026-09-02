@@ -142,6 +142,8 @@ export const NotificationBell = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="btn btn-secondary btn-sm"
         style={{ padding: '8px', borderRadius: 'var(--radius-full)', position: 'relative' }}
+        aria-label={unreadCount > 0 ? `Thông báo, có ${unreadCount} thông báo mới` : 'Thông báo'}
+        aria-expanded={isOpen}
         title="Thông báo"
       >
         <Bell size={16} />

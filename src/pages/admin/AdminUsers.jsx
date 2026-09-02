@@ -61,8 +61,8 @@ export const AdminUsers = () => {
 
   const openCreateModal = () => {
     setModalMode('create');
-    setSelectedUser(null);
-    setIdInput(`user_${Math.random().toString(36).substring(2, 12)}`);
+    const randSuffix = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').substring(0, 10) : Date.now().toString(36);
+    setIdInput(`user_${randSuffix}`);
     setFullNameInput('');
     setPhoneInput('');
     setRoleInput('student');

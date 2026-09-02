@@ -29,10 +29,17 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const tokenParts = token.split(".");
-    if (tokenParts.length < 2) throw new Error("Invalid JWT token format");
-    const payload = JSON.parse(atob(tokenParts[1]));
-    const studentId = payload.sub;
+    // Xác thực chữ ký và tính hợp lệ của JWT token qua Supabase Auth
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const studentId = user?.id;
+
+    if (userError || !studentId) {
+      console.error("JWT verification failed:", userError);
+      return new Response(JSON.stringify({ error: "Invalid or expired authorization token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { attemptId, answers } = await req.json();
     if (!attemptId || !Array.isArray(answers)) {
@@ -158,11 +165,13 @@ serve(async (req) => {
       if (quiz.show_answer_after_submit) {
         questionResults.push({
           question_id: q.id,
+          content: q.content,
           is_correct: isCorrect,
           points_awarded: pointsAwarded,
           max_points: qPoints,
           explanation: q.explanation,
           correct_option_ids: q.answer_options.filter((opt: any) => opt.is_correct).map((o: any) => o.id),
+          correct_options: q.answer_options.filter((opt: any) => opt.is_correct).map((o: any) => o.content),
           accepted_answers: q.accepted_answers,
         });
       }

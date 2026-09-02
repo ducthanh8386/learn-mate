@@ -110,6 +110,11 @@ export const StudentAssignments = () => {
     setSubmitError(null);
 
     try {
+      const isPastDeadline = activeAssignmentForSubmit?.deadline && new Date(activeAssignmentForSubmit.deadline) < new Date();
+      if (isPastDeadline && !activeAssignmentForSubmit?.allow_late_submission) {
+        throw new Error('Bài tập đã hết hạn nộp và giáo viên không cho phép nộp muộn.');
+      }
+
       if (!textContent.trim() && files.length === 0) {
         throw new Error('Vui lòng nhập nội dung bài làm hoặc tải lên ít nhất 1 file đính kèm.');
       }
@@ -214,6 +219,8 @@ export const StudentAssignments = () => {
                 const sub = item.assignment_submissions?.[0];
                 const isGraded = sub?.status === 'GRADED';
                 const isSubmitted = !!sub;
+                const isPastDeadline = item.deadline && new Date(item.deadline) < new Date();
+                const canSubmit = !isPastDeadline || item.allow_late_submission;
 
                 return (
                   <div key={item.id} className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -227,11 +234,18 @@ export const StudentAssignments = () => {
                         </h3>
                       </div>
 
-                      <span className={`badge ${
-                        isGraded ? 'badge-success' : isSubmitted ? 'badge-primary' : 'badge-warning'
-                      }`}>
-                        {isGraded ? 'Đã chấm điểm' : isSubmitted ? 'Đã nộp bài' : 'Chưa nộp'}
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                        <span className={`badge ${
+                          isGraded ? 'badge-success' : isSubmitted ? 'badge-primary' : 'badge-warning'
+                        }`}>
+                          {isGraded ? 'Đã chấm điểm' : isSubmitted ? 'Đã nộp bài' : 'Chưa nộp'}
+                        </span>
+                        {isPastDeadline && (
+                          <span className={`badge ${item.allow_late_submission ? 'badge-warning' : 'badge-danger'}`} style={{ fontSize: '0.7rem' }}>
+                            {item.allow_late_submission ? 'Cho phép nộp muộn' : 'Đã hết hạn'}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {item.description && (
@@ -240,7 +254,7 @@ export const StudentAssignments = () => {
                       </p>
                     )}
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem', color: isPastDeadline ? 'var(--danger-600)' : 'var(--text-secondary)' }}>
                       <Clock size={14} />
                       <span>Hạn nộp: {item.deadline ? new Date(item.deadline).toLocaleString('vi-VN') : 'Không hạn'}</span>
                     </div>
@@ -263,12 +277,19 @@ export const StudentAssignments = () => {
                     )}
 
                     <button
-                      className={`btn btn-sm ${isGraded ? 'btn-secondary' : 'btn-primary'}`}
+                      className={`btn btn-sm ${!canSubmit && !isSubmitted ? 'btn-secondary' : isGraded ? 'btn-secondary' : 'btn-primary'}`}
                       onClick={() => openSubmitModal(item)}
+                      disabled={!canSubmit && !isSubmitted}
                       style={{ width: '100%', marginTop: 'auto', justifyContent: 'center' }}
                     >
                       <Upload size={14} />
-                      <span>{isSubmitted ? 'Xem lại / Nộp lại bài' : 'Nộp bài làm ngay'}</span>
+                      <span>
+                        {!canSubmit && !isSubmitted 
+                          ? 'Đã hết hạn nộp' 
+                          : isSubmitted 
+                          ? 'Xem lại / Nộp lại bài' 
+                          : 'Nộp bài làm ngay'}
+                      </span>
                     </button>
                   </div>
                 );
@@ -366,6 +387,8 @@ export const StudentAssignments = () => {
           }}>
             <button
               onClick={() => setActiveAssignmentForSubmit(null)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -389,6 +412,26 @@ export const StudentAssignments = () => {
                 </p>
               </div>
 
+              {activeAssignmentForSubmit?.deadline && new Date(activeAssignmentForSubmit.deadline) < new Date() && (
+                <div style={{
+                  backgroundColor: activeAssignmentForSubmit.allow_late_submission ? 'var(--warning-50)' : 'var(--danger-50)',
+                  color: activeAssignmentForSubmit.allow_late_submission ? 'var(--warning-700)' : 'var(--danger-700)',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <AlertCircle size={16} />
+                  <span>
+                    {activeAssignmentForSubmit.allow_late_submission
+                      ? 'Bài tập đã quá hạn nộp nhưng giáo viên cho phép nộp muộn.'
+                      : 'Bài tập đã hết hạn nộp! Bạn không thể nộp bài được nữa.'}
+                  </span>
+                </div>
+              )}
+
               {submitError && (
                 <div style={{
                   backgroundColor: 'var(--danger-50)',
@@ -406,10 +449,11 @@ export const StudentAssignments = () => {
               )}
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
+                <label htmlFor="assignment-text-content" style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
                   Nội dung bài làm (văn bản)
                 </label>
                 <textarea
+                  id="assignment-text-content"
                   rows={4}
                   value={textContent}
                   onChange={(e) => setTextContent(e.target.value)}
@@ -427,10 +471,11 @@ export const StudentAssignments = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
+                <label htmlFor="assignment-file-upload" style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
                   Tải lên file bài tập (Ảnh chụp, PDF, Word)
                 </label>
                 <input
+                  id="assignment-file-upload"
                   type="file"
                   multiple
                   accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
@@ -453,7 +498,12 @@ export const StudentAssignments = () => {
                 <button type="button" className="btn btn-secondary" onClick={() => setActiveAssignmentForSubmit(null)} style={{ flex: 1 }}>
                   Hủy
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={submitting} style={{ flex: 1 }}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={submitting || (activeAssignmentForSubmit?.deadline && new Date(activeAssignmentForSubmit.deadline) < new Date() && !activeAssignmentForSubmit.allow_late_submission)}
+                  style={{ flex: 1 }}
+                >
                   {submitting ? 'Đang gửi bài...' : 'Nộp bài ngay'}
                 </button>
               </div>

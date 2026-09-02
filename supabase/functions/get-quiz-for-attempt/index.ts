@@ -29,14 +29,13 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Extract user_id (sub) from JWT token payload
-    const tokenParts = token.split(".");
-    if (tokenParts.length < 2) throw new Error("Invalid JWT token format");
-    const payload = JSON.parse(atob(tokenParts[1]));
-    const studentId = payload.sub;
+    // Xác thực chữ ký và tính hợp lệ của JWT token qua Supabase Auth
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const studentId = user?.id;
 
-    if (!studentId) {
-      return new Response(JSON.stringify({ error: "Unauthorized user" }), {
+    if (userError || !studentId) {
+      console.error("JWT verification failed:", userError);
+      return new Response(JSON.stringify({ error: "Invalid or expired authorization token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

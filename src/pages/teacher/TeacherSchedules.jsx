@@ -2,27 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { useAppAuth } from '../../context/AuthContext';
 import { 
   Calendar, 
-  Clock, 
   Video, 
   Plus, 
-  CheckCircle2, 
-  XCircle, 
   AlertCircle, 
   Users, 
-  ExternalLink,
-  X,
-  Check,
-  UserCheck,
-  UserX
+  ExternalLink, 
+  X
 } from 'lucide-react';
+import { ErrorState, FormField } from '../../components/common';
 
 export const TeacherSchedules = () => {
-  const { supabaseClient, user } = useAppAuth();
+  const { supabaseClient } = useAppAuth();
 
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
 
   // Create Schedule Modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -67,6 +63,7 @@ export const TeacherSchedules = () => {
       }
     } catch (err) {
       console.error('Error fetching schedules:', err);
+      setFetchError(err.message || 'Không thể tải lịch dạy.');
     } finally {
       setLoading(false);
     }
@@ -257,6 +254,8 @@ export const TeacherSchedules = () => {
         <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
           Đang tải lịch dạy...
         </div>
+      ) : fetchError ? (
+        <ErrorState message={fetchError} onRetry={fetchClassesAndSchedules} />
       ) : schedules.length === 0 ? (
         <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
           <Calendar size={48} color="var(--primary-400)" style={{ margin: '0 auto 12px' }} />
@@ -361,6 +360,8 @@ export const TeacherSchedules = () => {
           }}>
             <button
               onClick={() => setIsCreateOpen(false)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -396,95 +397,50 @@ export const TeacherSchedules = () => {
                 </div>
               )}
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Tiêu đề buổi dạy *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="VD: Buổi 12: Chữa đề thi thử Đại học số 1"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-              </div>
+              <FormField
+                id="schedule-title"
+                label="Tiêu đề buổi dạy"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="VD: Buổi 12: Chữa đề thi thử Đại học số 1"
+              />
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                    Giờ bắt đầu *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-subtle)',
-                      backgroundColor: 'var(--bg-page)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                </div>
+                <FormField
+                  id="schedule-start-time"
+                  label="Giờ bắt đầu"
+                  type="datetime-local"
+                  required
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                    Giờ kết thúc *
-                  </label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-subtle)',
-                      backgroundColor: 'var(--bg-page)',
-                      color: 'var(--text-primary)'
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', marginBottom: '6px' }}>
-                  Liên kết phòng học Zoom / Google Meet
-                </label>
-                <input
-                  type="url"
-                  value={meetingUrl}
-                  onChange={(e) => setMeetingUrl(e.target.value)}
-                  placeholder="VD: https://meet.google.com/abc-defg-hij"
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-page)',
-                    color: 'var(--text-primary)'
-                  }}
+                <FormField
+                  id="schedule-end-time"
+                  label="Giờ kết thúc"
+                  type="datetime-local"
+                  required
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
                 />
               </div>
+
+              <FormField
+                id="schedule-meeting-url"
+                label="Liên kết phòng học Zoom / Google Meet"
+                type="url"
+                value={meetingUrl}
+                onChange={(e) => setMeetingUrl(e.target.value)}
+                placeholder="VD: https://meet.google.com/abc-defg-hij"
+              />
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsCreateOpen(false)} style={{ flex: 1 }}>
                   Hủy
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={createLoading} style={{ flex: 1 }}>
-                  {createLoading ? 'Đang tạo...' : 'Lưu lịch học'}
+                  {createLoading ? 'Đang tạo...' : 'Lên lịch ngay'}
                 </button>
               </div>
             </form>
@@ -492,7 +448,7 @@ export const TeacherSchedules = () => {
         </div>
       )}
 
-      {/* Modal Bảng Điểm Danh */}
+      {/* Modal Bảng Điểm Danh Buổi Học */}
       {activeScheduleForAttendance && (
         <div style={{
           position: 'fixed',
@@ -506,16 +462,19 @@ export const TeacherSchedules = () => {
           padding: '20px'
         }}>
           <div className="glass-card" style={{
-            maxWidth: '720px',
+            maxWidth: '680px',
             width: '100%',
             maxHeight: '90vh',
-            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
             backgroundColor: 'var(--bg-surface)',
             padding: '32px',
             position: 'relative'
           }}>
             <button
               onClick={() => setActiveScheduleForAttendance(null)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
               style={{
                 position: 'absolute',
                 top: '20px',

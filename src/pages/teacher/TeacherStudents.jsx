@@ -4,26 +4,24 @@ import { exportToExcel } from '../../lib/excelExport';
 import { 
   Users, 
   Search, 
-  Download, 
   FileSpreadsheet, 
   CheckCircle2, 
-  Clock, 
   Award, 
   CreditCard, 
   X, 
-  Eye,
-  BookOpen,
-  Filter,
-  BarChart3
+  Eye
 } from 'lucide-react';
+import { formatCurrency } from '../../lib/formatters';
+import { ErrorState } from '../../components/common';
 
 export const TeacherStudents = () => {
-  const { supabaseClient, user } = useAppAuth();
+  const { supabaseClient } = useAppAuth();
 
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Student Detail Modal
@@ -111,6 +109,7 @@ export const TeacherStudents = () => {
       }
     } catch (err) {
       console.error('Error fetching students:', err);
+      setFetchError(err.message || 'Không thể tải danh sách học sinh.');
     } finally {
       setLoading(false);
     }
@@ -262,6 +261,8 @@ export const TeacherStudents = () => {
         <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
           Đang tải danh sách học sinh...
         </div>
+      ) : fetchError ? (
+        <ErrorState message={fetchError} onRetry={fetchClassesAndStudents} />
       ) : filteredStudents.length === 0 ? (
         <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
           <Users size={48} color="var(--primary-400)" style={{ margin: '0 auto 12px' }} />
@@ -376,6 +377,8 @@ export const TeacherStudents = () => {
           }}>
             <button
               onClick={() => setActiveStudent(null)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
               style={{
                 position: 'absolute',
                 top: '20px',
@@ -461,7 +464,7 @@ export const TeacherStudents = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {studentDetail.tuition.map((inv) => (
                         <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
-                          <span>{inv.period} ({Number(inv.amount_due).toLocaleString('vi-VN')}đ)</span>
+                          <span>{inv.period} ({formatCurrency(inv.amount_due)})</span>
                           <span className={`badge ${inv.status === 'paid' ? 'badge-success' : 'badge-danger'}`}>
                             {inv.status === 'paid' ? 'Đã thu' : 'Chưa đóng'}
                           </span>
