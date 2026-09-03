@@ -44,12 +44,12 @@ export const LandingPage = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <SignInButton mode="modal">
+          <Link to="/auth">
             <button className="btn btn-secondary">Đăng nhập</button>
-          </SignInButton>
-          <SignUpButton mode="modal">
+          </Link>
+          <Link to="/auth">
             <button className="btn btn-primary">Bắt đầu ngay</button>
-          </SignUpButton>
+          </Link>
         </div>
       </header>
 
@@ -75,11 +75,11 @@ export const LandingPage = () => {
           </p>
 
           <div style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
-            <SignUpButton mode="modal">
+            <Link to="/auth">
               <button className="btn btn-primary" style={{ padding: '12px 28px', fontSize: '1rem' }}>
                 Tham gia ngay <ArrowRight size={18} />
               </button>
-            </SignUpButton>
+            </Link>
           </div>
 
           {/* Key Features Preview */}

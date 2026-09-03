@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
 import { ProtectedRoute } from './ProtectedRoute';
 import { LandingPage } from '../pages/LandingPage';
+import { AuthPage } from '../pages/auth/AuthPage';
 import { TeacherDashboard } from '../pages/teacher/TeacherDashboard';
 import { TeacherClasses } from '../pages/teacher/TeacherClasses';
 import { TeacherStudents } from '../pages/teacher/TeacherStudents';
@@ -27,6 +28,8 @@ export const AppRouter = () => {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/auth" element={<AuthPage />} />
+      <Route path="/login" element={<AuthPage />} />
 
       {/* Admin routes */}
       <Route
