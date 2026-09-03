@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthenticateWithRedirectCallback } from '@clerk/clerk-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { ProtectedRoute } from './ProtectedRoute';
 import { LandingPage } from '../pages/LandingPage';
@@ -30,6 +31,7 @@ export const AppRouter = () => {
       <Route path="/" element={<LandingPage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/login" element={<AuthPage />} />
+      <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
 
       {/* Admin routes */}
       <Route

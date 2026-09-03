@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useSignIn, useSignUp } from '@clerk/clerk-react';
 import { 
   Mail, 
   Lock, 
@@ -17,6 +18,9 @@ import './AuthPage.css';
 
 export const AuthPage = () => {
   const navigate = useNavigate();
+  const { signIn, isLoaded: isSignInLoaded } = useSignIn();
+  const { signUp, isLoaded: isSignUpLoaded } = useSignUp();
+
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -52,7 +56,37 @@ export const AuthPage = () => {
     if (errorMsg) setErrorMsg('');
   };
 
-  // Handle Sign In with Supabase
+  // Google OAuth Handler via Clerk
+  const handleOAuth = async (provider) => {
+    if (provider === 'google') {
+      try {
+        setLoading(true);
+        setErrorMsg('');
+
+        if (isActive) {
+          if (!isSignUpLoaded) return;
+          await signUp.authenticateWithRedirect({
+            strategy: 'oauth_google',
+            redirectUrl: '/sso-callback',
+            redirectUrlComplete: '/',
+          });
+        } else {
+          if (!isSignInLoaded) return;
+          await signIn.authenticateWithRedirect({
+            strategy: 'oauth_google',
+            redirectUrl: '/sso-callback',
+            redirectUrlComplete: '/',
+          });
+        }
+      } catch (err) {
+        console.error('Google OAuth error:', err);
+        setErrorMsg(err.errors?.[0]?.message || err.message || 'Lỗi khi đăng nhập bằng Google');
+        setLoading(false);
+      }
+    }
+  };
+
+  // Handle Sign In
   const handleSignIn = async (e) => {
     e.preventDefault();
     if (!signInData.email || !signInData.password) {
@@ -65,25 +99,35 @@ export const AuthPage = () => {
       setErrorMsg('');
       setSuccessMsg('');
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      if (signIn && isSignInLoaded) {
+        const result = await signIn.create({
+          identifier: signInData.email.trim(),
+          password: signInData.password,
+        });
+
+        if (result.status === 'complete') {
+          setSuccessMsg('Đăng nhập thành công! Đang chuyển hướng...');
+          setTimeout(() => navigate('/'), 800);
+          return;
+        }
+      }
+
+      // Fallback Supabase
+      const { error } = await supabase.auth.signInWithPassword({
         email: signInData.email.trim(),
         password: signInData.password,
       });
-
       if (error) throw error;
-
       setSuccessMsg('Đăng nhập thành công! Đang chuyển hướng...');
-      setTimeout(() => {
-        navigate('/student/dashboard');
-      }, 1000);
+      setTimeout(() => navigate('/'), 800);
     } catch (err) {
-      setErrorMsg(err.message || 'Email hoặc mật khẩu không chính xác');
+      setErrorMsg(err.errors?.[0]?.message || err.message || 'Email hoặc mật khẩu không chính xác');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle Sign Up with Supabase
+  // Handle Sign Up
   const handleSignUp = async (e) => {
     e.preventDefault();
     if (!signUpData.fullName || !signUpData.email || !signUpData.password) {
@@ -101,7 +145,24 @@ export const AuthPage = () => {
       setErrorMsg('');
       setSuccessMsg('');
 
-      const { data, error } = await supabase.auth.signUp({
+      if (signUp && isSignUpLoaded) {
+        const result = await signUp.create({
+          emailAddress: signUpData.email.trim(),
+          password: signUpData.password,
+          firstName: signUpData.fullName.trim(),
+        });
+
+        if (result.status === 'complete') {
+          setSuccessMsg('Đăng ký thành công!');
+          setTimeout(() => navigate('/'), 800);
+          return;
+        } else {
+          setSuccessMsg('Vui lòng kiểm tra email để xác nhận tài khoản!');
+          return;
+        }
+      }
+
+      const { error } = await supabase.auth.signUp({
         email: signUpData.email.trim(),
         password: signUpData.password,
         options: {
@@ -113,27 +174,12 @@ export const AuthPage = () => {
       });
 
       if (error) throw error;
-
       setSuccessMsg('Đăng ký thành công! Vui lòng kiểm tra email xác thực hoặc đăng nhập.');
-      setTimeout(() => {
-        setIsActive(false);
-      }, 1500);
+      setTimeout(() => setIsActive(false), 1500);
     } catch (err) {
-      setErrorMsg(err.message || 'Đăng ký không thành công. Vui lòng thử lại');
+      setErrorMsg(err.errors?.[0]?.message || err.message || 'Đăng ký không thành công. Vui lòng thử lại');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Social Login Mock / OAuth Handler
-  const handleOAuth = async (provider) => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: provider,
-      });
-      if (error) throw error;
-    } catch (err) {
-      setErrorMsg(`Chưa hỗ trợ đăng nhập ${provider} trong môi trường thử nghiệm`);
     }
   };
 
