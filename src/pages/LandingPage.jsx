@@ -3,6 +3,7 @@ import { SignInButton, SignUpButton, useUser } from '@clerk/clerk-react';
 import { Navigate, Link } from 'react-router-dom';
 import { BookOpen, ShieldCheck, GraduationCap, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAppAuth } from '../context/AuthContext';
+import { LogoBadge } from '../components/common';
 
 export const LandingPage = () => {
   const { isSignedIn, role } = useAppAuth();
@@ -14,33 +15,20 @@ export const LandingPage = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-page)', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-page)' }}>
+      {/* Navbar */}
       <header style={{
-        padding: '16px 40px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        padding: '16px 32px',
         borderBottom: '1px solid var(--border-subtle)',
         background: 'var(--glass-bg)',
         backdropFilter: 'var(--glass-blur)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            backgroundColor: 'var(--primary-500)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontWeight: '700',
-            fontSize: '18px'
-          }}>
-            L
-          </div>
-          <span style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)' }}>LearnMate</span>
+          <LogoBadge boxSize={36} iconSize={22} />
+          <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Learn Mate</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

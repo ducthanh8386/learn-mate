@@ -188,7 +188,7 @@ export const TeacherAssignments = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            Bài Tập Về Nhà 📋
+            Bài Tập Về Nhà
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
             Giao bài tập tự luận, thu file bài làm học sinh và chấm điểm nhận xét.

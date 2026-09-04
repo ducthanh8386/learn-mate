@@ -131,7 +131,7 @@ export const TeacherClasses = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            Quản Lý Lớp Học 📚
+            Quản Lý Lớp Học
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
             Tạo lớp, cung cấp mã lớp cho học sinh và quản lý thành viên từng lớp.

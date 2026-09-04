@@ -110,7 +110,7 @@ export const TeacherCourses = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            Khóa Học & Bài Giảng 📖
+            Khóa Học & Bài Giảng
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
             Xây dựng cây nội dung 3 cấp: Khóa học ➔ Chương học ➔ Bài giảng (YouTube / PDF).

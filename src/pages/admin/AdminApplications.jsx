@@ -15,7 +15,7 @@ export const AdminApplications = () => {
       setError(null);
       const { data, error: fetchErr } = await supabaseClient
         .from('tutor_applications')
-        .select('id, user_id, bio, experience, certificates, status, submitted_at, reviewed_at, reviewed_by, rejection_reason')
+        .select('id, user_id, full_name, phone, subjects, bio, status, submitted_at, reviewed_at, reviewed_by')
         .order('submitted_at', { ascending: false });
 
       if (fetchErr) throw fetchErr;

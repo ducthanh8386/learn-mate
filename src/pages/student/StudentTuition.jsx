@@ -52,7 +52,7 @@ export const StudentTuition = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-          Học Phí Của Tôi 💳
+          Học Phí Của Tôi
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
           Theo dõi các khoản học phí và lịch sử thanh toán theo từng lớp học.

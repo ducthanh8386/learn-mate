@@ -85,7 +85,7 @@ export const StudentSchedules = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-          Lịch Học & Điểm Danh 📅
+          Lịch Học & Điểm Danh
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
           Theo dõi lịch học trực tuyến Zoom/Meet và lịch sử chuyên cần của bạn.

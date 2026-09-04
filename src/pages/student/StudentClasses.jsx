@@ -101,7 +101,7 @@ export const StudentClasses = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            Lớp Học Của Tôi 🎓
+            Lớp Học Của Tôi
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
             Danh sách các lớp học và khóa bài giảng bạn đang tham gia.

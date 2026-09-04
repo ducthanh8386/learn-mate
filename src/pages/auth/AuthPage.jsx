@@ -14,6 +14,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
+import { LogoBadge } from '../../components/common';
 import './AuthPage.css';
 
 export const AuthPage = () => {
@@ -391,6 +392,7 @@ export const AuthPage = () => {
             
             {/* Left Panel (Shows when Sign Up is active -> Click to switch to Sign In) */}
             <div className="auth-toggle-panel auth-toggle-left">
+              <LogoBadge boxSize={48} iconSize={30} background="rgba(255, 255, 255, 0.2)" iconColor="#ffffff" style={{ marginBottom: '12px', border: '1px solid rgba(255, 255, 255, 0.3)' }} />
               <h1>Chào Mừng Trở Lại!</h1>
               <p>Đã có tài khoản LearnMate? Đăng nhập ngay để tiếp tục bài giảng và lớp học của bạn.</p>
               <button 
@@ -409,6 +411,7 @@ export const AuthPage = () => {
 
             {/* Right Panel (Shows when Sign In is active -> Click to switch to Sign Up) */}
             <div className="auth-toggle-panel auth-toggle-right">
+              <LogoBadge boxSize={48} iconSize={30} background="rgba(255, 255, 255, 0.2)" iconColor="#ffffff" style={{ marginBottom: '12px', border: '1px solid rgba(255, 255, 255, 0.3)' }} />
               <h1>Xin Chào Bạn Mới!</h1>
               <p>Đăng ký tài khoản để bắt đầu hành trình dạy & học thông minh cùng sổ gia sư điện tử.</p>
               <button 

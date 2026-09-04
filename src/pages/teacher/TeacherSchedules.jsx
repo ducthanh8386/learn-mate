@@ -208,7 +208,7 @@ export const TeacherSchedules = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            Lịch Dạy & Điểm Danh 📅
+            Lịch Dạy & Điểm Danh
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
             Lên lịch học Zoom/Google Meet và quản lý điểm danh sĩ số từng buổi học.

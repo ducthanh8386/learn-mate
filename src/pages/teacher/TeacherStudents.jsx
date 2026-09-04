@@ -190,7 +190,7 @@ export const TeacherStudents = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            Hồ Sơ Học Sinh & Báo Cáo 📊
+            Hồ Sơ Học Sinh & Báo Cáo
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
             Theo dõi tiến độ học tập, kết quả bài thi, điểm danh và xuất báo cáo Excel cho phụ huynh.

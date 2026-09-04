@@ -117,7 +117,7 @@ export const TeacherQuizzes = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            Đề Thi & Ngân Hàng Câu Hỏi 📝
+            Đề Thi & Ngân Hàng Câu Hỏi
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
             Quản lý ngân hàng câu hỏi dùng chung và soạn đề kiểm tra trắc nghiệm/tự luận.

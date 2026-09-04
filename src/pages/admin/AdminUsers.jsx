@@ -172,7 +172,7 @@ export const AdminUsers = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            Quản Lý Người Dùng 👥
+            Quản Lý Người Dùng
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
             Danh sách toàn bộ tài khoản trong hệ thống: Thêm mới, chỉnh sửa thông tin, phân quyền và xóa tài khoản.

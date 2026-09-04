@@ -58,7 +58,7 @@ export const AdminDashboard = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-          Quản Trị Hệ Thống 🛡️
+          Quản Trị Hệ Thống
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
           Bảng điều khiển quản trị tổng quan hệ thống LearnMate ({profile?.full_name || 'Admin'}).

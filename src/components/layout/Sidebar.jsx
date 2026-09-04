@@ -11,6 +11,7 @@ import {
   GraduationCap,
   LayoutDashboard
 } from 'lucide-react';
+import { LogoBadge } from '../common';
 
 const routePreloaders = {
   '/admin/dashboard': () => import('../../pages/admin/AdminDashboard'),
@@ -96,25 +97,14 @@ export const Sidebar = () => {
       flexShrink: 0
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 8px' }}>
-        <div style={{
-          width: '36px',
-          height: '36px',
-          borderRadius: '10px',
-          backgroundColor: 'var(--primary-500)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#fff',
-          fontWeight: '700',
-          fontSize: '18px'
-        }}>
-          L
-        </div>
+        <LogoBadge boxSize={36} iconSize={22} />
         <div>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: '700', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-            LearnMate
+          <h2 style={{ fontSize: '1.125rem', fontWeight: '800', letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>
+            Learn Mate
           </h2>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>LMS Gia Sư</span>
+          <span style={{ fontSize: '0.675rem', color: 'var(--text-muted)', display: 'block', marginTop: '2px', lineHeight: 1.2 }}>
+            Every student. Every class. One Learn-Mate.
+          </span>
         </div>
       </div>
 

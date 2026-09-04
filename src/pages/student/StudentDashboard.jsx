@@ -120,7 +120,7 @@ export const StudentDashboard = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            Góc Học Tập 🎓
+            Góc Học Tập
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
             Chào bạn <strong>{profile?.full_name || 'Học sinh'}</strong>! Chúc bạn một ngày học tập nhiều hứng khởi.
