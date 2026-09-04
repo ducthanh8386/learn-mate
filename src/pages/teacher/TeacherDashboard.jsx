@@ -49,12 +49,12 @@ export const TeacherDashboard = () => {
 
       const { count: studentCount } = await supabaseClient
         .from('class_members')
-        .select('*', { count: 'exact', head: true });
+        .select('student_id', { count: 'exact', head: true });
 
       // 2. Upcoming Schedule (Next 24 hours)
       const { data: upSch } = await supabaseClient
         .from('schedules')
-        .select('*, classes(name)')
+        .select('id, title, class_id, start_time, end_time, meeting_link, classes(name)')
         .gte('start_time', now.toISOString())
         .lte('start_time', in24Hours.toISOString())
         .order('start_time', { ascending: true })
@@ -66,7 +66,7 @@ export const TeacherDashboard = () => {
       if (classIds.length > 0) {
         const { data: pastSch } = await supabaseClient
           .from('schedules')
-          .select('*, classes(name), attendance(count)')
+          .select('id, title, class_id, start_time, end_time, classes(name), attendance(count)')
           .in('class_id', classIds)
           .lt('end_time', now.toISOString())
           .order('end_time', { ascending: false })

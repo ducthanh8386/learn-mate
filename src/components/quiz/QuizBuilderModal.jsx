@@ -52,7 +52,7 @@ export const QuizBuilderModal = ({ isOpen, onClose, courseId, classId, onSaved }
         // 2. Fetch questions for this course
         const { data: qList, error: qErr } = await supabaseClient
           .from('questions')
-          .select('*')
+          .select('id, course_id, question_text, question_type, difficulty, points, explanation, created_at')
           .eq('course_id', courseId)
           .order('created_at', { ascending: false });
 

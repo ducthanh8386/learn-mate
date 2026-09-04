@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useAppAuth } from '../../context/AuthContext';
 import { exportToExcel } from '../../lib/excelExport';
 import { 
@@ -128,20 +128,20 @@ export const TeacherStudents = () => {
       const [attRes, quizRes, assignRes, tuitionRes] = await Promise.all([
         supabaseClient
           .from('attendance')
-          .select('*, schedules(title, start_time)')
+          .select('id, schedule_id, status, note, schedules(title, start_time)')
           .eq('student_id', student.id)
           .eq('class_id', selectedClassId),
         supabaseClient
           .from('quiz_attempts')
-          .select('*, quizzes(title, pass_score)')
+          .select('id, quiz_id, score, status, started_at, submitted_at, quizzes(title, pass_score)')
           .eq('student_id', student.id),
         supabaseClient
           .from('assignment_submissions')
-          .select('*, assignments(title, max_score)')
+          .select('id, assignment_id, score, status, submitted_at, feedback, file_url, assignments(title, max_score)')
           .eq('student_id', student.id),
         supabaseClient
           .from('tuition_invoices')
-          .select('*')
+          .select('id, period, amount_due, amount_paid, status, due_date, paid_at, note')
           .eq('student_id', student.id)
           .eq('class_id', selectedClassId),
       ]);
@@ -175,10 +175,14 @@ export const TeacherStudents = () => {
     exportToExcel(data, `Danh_Sach_Lop_${className}`, 'DanhSachHocSinh');
   };
 
-  const filteredStudents = students.filter((st) =>
-    st.profile?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    st.profile?.phone?.includes(searchQuery)
-  );
+  const filteredStudents = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return students;
+    return students.filter((st) =>
+      st.profile?.full_name?.toLowerCase().includes(query) ||
+      st.profile?.phone?.includes(query)
+    );
+  }, [students, searchQuery]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

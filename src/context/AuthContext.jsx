@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
       // 1. Check if profile exists
       const { data, error } = await supabaseClient
         .from('profiles')
-        .select('*')
+        .select('id, full_name, role, avatar_url, phone, is_active, created_at')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -56,8 +56,9 @@ export const AuthProvider = ({ children }) => {
         const { data: inserted } = await supabaseClient
           .from('profiles')
           .insert(newProfile)
-          .select()
+          .select('id, full_name, role, avatar_url, phone, is_active, created_at')
           .single();
+
 
         if (inserted) {
           setProfile(inserted);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAppAuth } from '../../context/AuthContext';
 import { 
@@ -7,15 +7,49 @@ import {
   Calendar, 
   FileText, 
   CreditCard, 
-  Bell, 
-  Settings, 
   ShieldCheck, 
   GraduationCap,
   LayoutDashboard
 } from 'lucide-react';
 
+const routePreloaders = {
+  '/admin/dashboard': () => import('../../pages/admin/AdminDashboard'),
+  '/admin/applications': () => import('../../pages/admin/AdminApplications'),
+  '/admin/users': () => import('../../pages/admin/AdminUsers'),
+  '/teacher/dashboard': () => import('../../pages/teacher/TeacherDashboard'),
+  '/teacher/classes': () => import('../../pages/teacher/TeacherClasses'),
+  '/teacher/students': () => import('../../pages/teacher/TeacherStudents'),
+  '/teacher/courses': () => import('../../pages/teacher/TeacherCourses'),
+  '/teacher/quizzes': () => import('../../pages/teacher/TeacherQuizzes'),
+  '/teacher/assignments': () => import('../../pages/teacher/TeacherAssignments'),
+  '/teacher/schedules': () => import('../../pages/teacher/TeacherSchedules'),
+  '/teacher/tuition': () => import('../../pages/teacher/TeacherTuition'),
+  '/student/dashboard': () => import('../../pages/student/StudentDashboard'),
+  '/student/classes': () => import('../../pages/student/StudentClasses'),
+  '/student/schedules': () => import('../../pages/student/StudentSchedules'),
+  '/student/assignments': () => import('../../pages/student/StudentAssignments'),
+  '/student/tuition': () => import('../../pages/student/StudentTuition'),
+};
+
 export const Sidebar = () => {
   const { role } = useAppAuth();
+  const hoverTimerRef = useRef(null);
+
+  const handleMouseEnter = (to) => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      if (routePreloaders[to]) {
+        routePreloaders[to]();
+      }
+    }, 100);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+  };
 
   const getNavItems = () => {
     switch (role) {
@@ -91,6 +125,8 @@ export const Sidebar = () => {
             <NavLink
               key={item.to}
               to={item.to}
+              onMouseEnter={() => handleMouseEnter(item.to)}
+              onMouseLeave={handleMouseLeave}
               style={({ isActive }) => ({
                 display: 'flex',
                 alignItems: 'center',
@@ -113,3 +149,4 @@ export const Sidebar = () => {
     </aside>
   );
 };
+

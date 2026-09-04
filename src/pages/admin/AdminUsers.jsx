@@ -6,15 +6,8 @@ import {
   Search, 
   Edit3, 
   Trash2, 
-  ShieldCheck, 
-  GraduationCap, 
-  BookOpen, 
   X, 
-  AlertCircle, 
-  Check, 
-  RefreshCw,
-  UserCheck,
-  UserX
+  AlertCircle
 } from 'lucide-react';
 
 export const AdminUsers = () => {
@@ -43,7 +36,7 @@ export const AdminUsers = () => {
       setLoading(true);
       const { data, error } = await supabaseClient
         .from('profiles')
-        .select('*')
+        .select('id, full_name, role, phone, avatar_url, is_active, created_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

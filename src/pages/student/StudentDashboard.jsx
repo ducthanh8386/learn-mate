@@ -47,7 +47,7 @@ export const StudentDashboard = () => {
         // 2. Next Upcoming Schedule
         const { data: nextSch } = await supabaseClient
           .from('schedules')
-          .select('*, classes(name)')
+          .select('id, title, class_id, start_time, end_time, meeting_link, classes(name)')
           .in('class_id', classIds)
           .gte('end_time', now.toISOString())
           .order('start_time', { ascending: true })
@@ -59,7 +59,11 @@ export const StudentDashboard = () => {
         const { data: assignList } = await supabaseClient
           .from('assignments')
           .select(`
-            *,
+            id,
+            title,
+            class_id,
+            deadline,
+            max_score,
             classes (name),
             assignment_submissions (id, status)
           `)

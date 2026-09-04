@@ -131,7 +131,7 @@ export const TeacherSchedules = () => {
       // 2. Fetch existing attendance records for this schedule
       const { data: existingAttendance } = await supabaseClient
         .from('attendance')
-        .select('*')
+        .select('id, schedule_id, student_id, status, note')
         .eq('schedule_id', schedule.id);
 
       const aMap = {};

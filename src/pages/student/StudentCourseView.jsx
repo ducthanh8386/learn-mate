@@ -79,7 +79,7 @@ export const StudentCourseView = () => {
       // 3. Fetch student's video progress
       const { data: progData } = await supabaseClient
         .from('video_progress')
-        .select('*')
+        .select('content_id, watched_seconds, total_seconds, is_completed, last_watched_at')
         .eq('student_id', user.id);
 
       if (progData) {

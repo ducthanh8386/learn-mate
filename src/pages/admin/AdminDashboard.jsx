@@ -23,14 +23,14 @@ export const AdminDashboard = () => {
         const [appRes, usersRes, classesRes] = await Promise.all([
           supabaseClient
             .from('tutor_applications')
-            .select('*', { count: 'exact', head: true })
+            .select('id', { count: 'exact', head: true })
             .eq('status', 'PENDING'),
           supabaseClient
             .from('profiles')
             .select('role'),
           supabaseClient
             .from('classes')
-            .select('*', { count: 'exact', head: true }),
+            .select('id', { count: 'exact', head: true }),
         ]);
 
         const allUsers = usersRes.data || [];

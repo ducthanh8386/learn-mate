@@ -3,22 +3,15 @@ import { useAppAuth } from '../../context/AuthContext';
 import { 
   CreditCard, 
   Plus, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  Users, 
   Search, 
   X, 
-  Filter,
-  ArrowUpRight,
-  TrendingUp,
   Receipt
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../lib/formatters';
 import { ErrorState, FormField } from '../../components/common';
 
 export const TeacherTuition = () => {
-  const { supabaseClient, user } = useAppAuth();
+  const { supabaseClient } = useAppAuth();
 
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
