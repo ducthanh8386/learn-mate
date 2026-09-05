@@ -1,43 +1,51 @@
 import React, { useEffect, useState } from 'react';
 import { useAppAuth } from '../../context/AuthContext';
 import { 
-  Calendar, 
+  Calendar as CalendarIcon, 
   Clock, 
   Video, 
-  ExternalLink, 
   CheckCircle2, 
-  XCircle, 
-  AlertCircle,
-  Sparkles,
   Users
 } from 'lucide-react';
+import { 
+  WeeklyTimetable, 
+  MiniCalendar, 
+  ScheduleDetailModal 
+} from '../../components/schedule';
 
 export const StudentSchedules = () => {
   const { supabaseClient, user } = useAppAuth();
 
-  const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' | 'history'
+  const [activeTab, setActiveTab] = useState('timetable'); // 'timetable' | 'history'
   const [schedules, setSchedules] = useState([]);
   const [attendanceHistory, setAttendanceHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Selected date for calendar & timetable navigation
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Active schedule for detail / classmates modal
+  const [activeScheduleDetail, setActiveScheduleDetail] = useState(null);
 
   const fetchData = async () => {
     try {
       setLoading(true);
 
       // 1. Get student enrolled class IDs
-      const { data: memberData } = await supabaseClient
+      const { data: memberData, error: mErr } = await supabaseClient
         .from('class_members')
         .select('class_id');
 
+      if (mErr) throw mErr;
       const classIds = (memberData || []).map((m) => m.class_id);
 
       if (classIds.length > 0) {
-        // Fetch schedules
+        // Fetch schedules for these classes
         const { data: schList, error: sErr } = await supabaseClient
           .from('schedules')
           .select(`
             *,
-            classes (name, subject)
+            classes (id, name, subject)
           `)
           .in('class_id', classIds)
           .order('start_time', { ascending: true });
@@ -58,6 +66,9 @@ export const StudentSchedules = () => {
 
         if (aErr) throw aErr;
         setAttendanceHistory(attList || []);
+      } else {
+        setSchedules([]);
+        setAttendanceHistory([]);
       }
     } catch (err) {
       console.error('Error fetching student schedules:', err);
@@ -67,7 +78,7 @@ export const StudentSchedules = () => {
   };
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && supabaseClient) {
       fetchData();
     }
   }, [user?.id, supabaseClient]);
@@ -82,20 +93,21 @@ export const StudentSchedules = () => {
   const attendanceRate = totalMarked > 0 ? Math.round((presentCount / totalMarked) * 100) : 100;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Page Header */}
       <div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-          Lịch Học & Điểm Danh
+          Thời Khóa Biểu & Điểm Danh
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
-          Theo dõi lịch học trực tuyến Zoom/Meet và lịch sử chuyên cần của bạn.
+          Theo dõi lịch học các lớp, phòng họp Google Meet/Zoom và lịch sử chuyên cần của bạn.
         </p>
       </div>
 
-      {/* Next Upcoming Live Banner */}
+      {/* Next Upcoming Live Session Banner */}
       {nextSession && (
         <div style={{
-          padding: '24px 28px',
+          padding: '20px 24px',
           borderRadius: 'var(--radius-lg)',
           background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%)',
           border: '1px solid rgba(99, 102, 241, 0.25)',
@@ -112,7 +124,7 @@ export const StudentSchedules = () => {
                 {nextSession.classes?.name}
               </span>
             </div>
-            <h2 style={{ fontSize: '1.375rem', fontWeight: '800', color: 'var(--text-primary)' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
               {nextSession.title}
             </h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
@@ -123,31 +135,42 @@ export const StudentSchedules = () => {
             </div>
           </div>
 
-          {nextSession.meeting_url ? (
-            <a
-              href={nextSession.meeting_url}
-              target="_blank"
-              rel="noreferrer"
-              className="btn btn-primary"
-              style={{ padding: '12px 24px', fontSize: '1rem', fontWeight: '700' }}
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => setActiveScheduleDetail(nextSession)}
+              style={{ fontWeight: '700' }}
             >
-              <Video size={18} /> Vào Lớp Trực Tuyến
-            </a>
-          ) : (
-            <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Gia sư chưa cập nhật link phòng học</span>
-          )}
+              <Users size={16} /> Xem lớp & bạn bè
+            </button>
+
+            {nextSession.meeting_url && (
+              <a
+                href={nextSession.meeting_url}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-primary"
+                style={{ padding: '10px 20px', fontSize: '0.925rem', fontWeight: '700' }}
+              >
+                <Video size={16} /> Vào Lớp Trực Tuyến
+              </a>
+            )}
+          </div>
         </div>
       )}
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
         <button
-          className={`btn btn-sm ${activeTab === 'upcoming' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setActiveTab('upcoming')}
+          type="button"
+          className={`btn btn-sm ${activeTab === 'timetable' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setActiveTab('timetable')}
         >
-          <Calendar size={14} /> Lịch học sắp tới ({upcomingSchedules.length})
+          <CalendarIcon size={14} /> Thời khóa biểu tuần
         </button>
         <button
+          type="button"
           className={`btn btn-sm ${activeTab === 'history' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveTab('history')}
         >
@@ -155,61 +178,54 @@ export const StudentSchedules = () => {
         </button>
       </div>
 
-      {/* Tab: Upcoming Schedules */}
-      {activeTab === 'upcoming' && (
+      {/* Tab: Timetable & Calendar */}
+      {activeTab === 'timetable' && (
         <div>
           {loading ? (
-            <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              Đang tải lịch học...
-            </div>
-          ) : upcomingSchedules.length === 0 ? (
-            <div className="glass-card" style={{ padding: '48px', textAlign: 'center' }}>
-              <Calendar size={48} color="var(--primary-400)" style={{ margin: '0 auto 12px' }} />
-              <h3 style={{ fontSize: '1.125rem', fontWeight: '700' }}>Không có buổi học nào sắp tới</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '6px' }}>
-                Thầy/cô sẽ sớm lên lịch học mới cho các lớp của bạn.
-              </p>
+            <div className="glass-card" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              Đang tải thời khóa biểu...
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
-              {upcomingSchedules.map((sch) => {
-                const startD = new Date(sch.start_time);
-                const endD = new Date(sch.end_time);
+            <div className="schedule-main-layout">
+              {/* Left Column: Weekly Timetable */}
+              <div>
+                <WeeklyTimetable
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                  schedules={schedules}
+                  isTeacher={false}
+                  onScheduleClick={(sch) => setActiveScheduleDetail(sch)}
+                  title="Lịch học cá nhân"
+                />
+              </div>
 
-                return (
-                  <div key={sch.id} className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div>
-                      <span className="badge badge-primary" style={{ marginBottom: '6px' }}>
-                        {sch.classes?.name}
-                      </span>
-                      <h3 style={{ fontSize: '1.125rem', fontWeight: '700', color: 'var(--text-primary)' }}>
-                        {sch.title}
-                      </h3>
-                    </div>
+              {/* Right Column: Mini Calendar */}
+              <div>
+                <MiniCalendar
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                  schedules={schedules}
+                />
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                      <Clock size={14} color="var(--primary-500)" />
-                      <span>{startD.toLocaleDateString('vi-VN')} ({startD.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - {endD.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })})</span>
-                    </div>
-
-                    {sch.meeting_url ? (
-                      <a
-                        href={sch.meeting_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn btn-primary btn-sm"
-                        style={{ marginTop: 'auto', justifyContent: 'center' }}
-                      >
-                        <Video size={14} /> Vào lớp học
-                      </a>
-                    ) : (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 'auto' }}>
-                        Chưa có liên kết phòng học
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
+                <div
+                  style={{
+                    marginTop: '16px',
+                    padding: '14px',
+                    backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                    border: '1px solid rgba(99, 102, 241, 0.15)',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.8125rem',
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <strong style={{ color: 'var(--primary-600)', display: 'block', marginBottom: '4px' }}>
+                    Hướng dẫn học sinh:
+                  </strong>
+                  • Nhấp vào buổi học trên lịch để xem link Google Meet / Zoom và danh sách bạn cùng lớp.<br />
+                  • Nhấp vào các ngày trên lịch nhỏ bên phải để chuyển nhanh đến tuần tương ứng.
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -227,12 +243,12 @@ export const StudentSchedules = () => {
               <CheckCircle2 size={48} color="var(--success-500)" style={{ margin: '0 auto 12px' }} />
               <h3 style={{ fontSize: '1.125rem', fontWeight: '700' }}>Chưa có dữ liệu điểm danh</h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '6px' }}>
-                Dữ liệu sẽ xuất hiện sau khi thầy/cô điểm danh các buổi học đã diễn ra.
+                Dữ liệu sẽ xuất hiện sau khi giáo viên điểm danh các buổi học đã diễn ra.
               </p>
             </div>
           ) : (
-            <div className="glass-card" style={{ overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <div className="glass-card table-responsive">
+              <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ backgroundColor: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-subtle)', fontSize: '0.8125rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>
                     <th style={{ padding: '12px 16px' }}>Buổi học</th>
@@ -280,6 +296,16 @@ export const StudentSchedules = () => {
           )}
         </div>
       )}
+
+      {/* Schedule Detail & Classmate Roster Modal */}
+      <ScheduleDetailModal
+        isOpen={Boolean(activeScheduleDetail)}
+        onClose={() => setActiveScheduleDetail(null)}
+        schedule={activeScheduleDetail}
+        isTeacher={false}
+        currentUser={user}
+        supabaseClient={supabaseClient}
+      />
     </div>
   );
 };

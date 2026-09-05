@@ -9,7 +9,8 @@ import {
   CreditCard, 
   ShieldCheck, 
   GraduationCap,
-  LayoutDashboard
+  LayoutDashboard,
+  X
 } from 'lucide-react';
 import { LogoBadge } from '../common';
 
@@ -32,7 +33,7 @@ const routePreloaders = {
   '/student/tuition': () => import('../../pages/student/StudentTuition'),
 };
 
-export const Sidebar = () => {
+export const Sidebar = ({ isMobileOpen = false, onClose }) => {
   const { role } = useAppAuth();
   const hoverTimerRef = useRef(null);
 
@@ -86,57 +87,75 @@ export const Sidebar = () => {
   const navItems = getNavItems();
 
   return (
-    <aside style={{
-      width: 'var(--sidebar-width)',
-      backgroundColor: 'var(--bg-surface)',
-      borderRight: '1px solid var(--border-subtle)',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '24px 16px',
-      gap: '24px',
-      flexShrink: 0
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 8px' }}>
-        <LogoBadge boxSize={36} iconSize={22} />
-        <div>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: '800', letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>
-            Learn Mate
-          </h2>
-          <span style={{ fontSize: '0.675rem', color: 'var(--text-muted)', display: 'block', marginTop: '2px', lineHeight: 1.2 }}>
-            Every student. Every class. One Learn-Mate.
-          </span>
-        </div>
-      </div>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="sidebar-backdrop" 
+          onClick={onClose} 
+          aria-hidden="true" 
+        />
+      )}
 
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onMouseEnter={() => handleMouseEnter(item.to)}
-              onMouseLeave={handleMouseLeave}
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.875rem',
-                fontWeight: isActive ? '600' : '500',
-                color: isActive ? 'var(--primary-600)' : 'var(--text-secondary)',
-                backgroundColor: isActive ? 'var(--primary-50)' : 'transparent',
-                transition: 'all 0.15s ease'
-              })}
-            >
-              <Icon size={18} />
-              <span>{item.label}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
-    </aside>
+      <aside className={`app-sidebar ${isMobileOpen ? 'open' : ''}`}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <LogoBadge boxSize={36} iconSize={22} />
+            <div>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: '800', letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: 0, lineHeight: 1.2 }}>
+                Learn Mate
+              </h2>
+              <span style={{ fontSize: '0.675rem', color: 'var(--text-muted)', display: 'block', marginTop: '2px', lineHeight: 1.2 }}>
+                Every student. Every class. One Learn-Mate.
+              </span>
+            </div>
+          </div>
+
+          {/* Close button on mobile */}
+          <button
+            onClick={onClose}
+            className="mobile-only btn btn-secondary btn-sm"
+            style={{ padding: '6px', borderRadius: 'var(--radius-sm)', border: 'none', background: 'var(--bg-subtle)' }}
+            aria-label="Đóng menu"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflowY: 'auto' }}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={() => {
+                  if (onClose) onClose();
+                }}
+                onMouseEnter={() => handleMouseEnter(item.to)}
+                onMouseLeave={handleMouseLeave}
+                style={({ isActive }) => ({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '0.875rem',
+                  fontWeight: isActive ? '600' : '500',
+                  color: isActive ? 'var(--primary-600)' : 'var(--text-secondary)',
+                  backgroundColor: isActive ? 'var(--primary-50)' : 'transparent',
+                  transition: 'all 0.15s ease'
+                })}
+              >
+                <Icon size={18} />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
   );
 };
+
 

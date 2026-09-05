@@ -1,0 +1,391 @@
+/* Schedule & Timetable View Styling */
+
+.schedule-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.schedule-main-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .schedule-main-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Breadcrumb & Navigation Toolbar */
+.schedule-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 14px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.schedule-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.schedule-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.schedule-nav-btn:hover {
+  background-color: var(--primary-50);
+  border-color: var(--primary-300);
+  color: var(--primary-600);
+}
+
+.schedule-week-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Weekly Timetable Grid Wrapper */
+.timetable-wrapper {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.timetable-scroll-area {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.timetable-grid {
+  min-width: 800px;
+  display: grid;
+  grid-template-columns: 70px repeat(7, 1fr);
+  border-collapse: collapse;
+}
+
+/* Timetable Header Row */
+.timetable-header-cell {
+  background-color: var(--bg-page);
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  padding: 12px 8px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  user-select: none;
+}
+
+.timetable-header-cell.time-col-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background-color: var(--bg-subtle);
+}
+
+.timetable-header-cell.today-header {
+  background-color: rgba(99, 102, 241, 0.1);
+  color: var(--primary-600);
+  border-bottom: 2px solid var(--primary-600);
+}
+
+.timetable-header-date {
+  font-size: 0.875rem;
+  font-weight: 800;
+  display: block;
+}
+
+.timetable-header-day {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+/* Timetable Body Rows */
+.timetable-time-label {
+  background-color: var(--bg-page);
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-height: 70px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.timetable-slot {
+  position: relative;
+  border-bottom: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+  min-height: 70px;
+  padding: 4px;
+  background-color: var(--bg-surface);
+  transition: background-color 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timetable-slot.today-col {
+  background-color: rgba(99, 102, 241, 0.02);
+}
+
+.timetable-slot.slot-clickable:hover {
+  background-color: rgba(99, 102, 241, 0.06);
+  cursor: pointer;
+}
+
+.slot-add-indicator {
+  opacity: 0;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  color: var(--primary-500);
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.timetable-slot.slot-clickable:hover .slot-add-indicator {
+  opacity: 1;
+}
+
+/* Event / Session Cards inside Timetable */
+.schedule-card-item {
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border-left: 3px solid var(--primary-600);
+  background: #1e293b;
+  color: #ffffff;
+  overflow: hidden;
+  text-align: left;
+}
+
+.schedule-card-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  filter: brightness(1.05);
+}
+
+.schedule-card-item.status-completed {
+  background: #0f3d2e;
+  border-left-color: var(--success-500);
+}
+
+.schedule-card-item.status-scheduled {
+  background: #1e293b;
+  border-left-color: var(--primary-500);
+}
+
+.schedule-card-item.status-unmarked {
+  background: #422006;
+  border-left-color: var(--warning-500);
+}
+
+.schedule-card-title {
+  font-weight: 700;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.schedule-card-time {
+  font-size: 0.6875rem;
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.schedule-card-meta {
+  font-size: 0.6875rem;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mini Calendar Widget */
+.mini-calendar-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.mini-cal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1e293b;
+  color: #ffffff;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+}
+
+.mini-cal-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.mini-cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mini-cal-nav-btn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.mini-cal-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mini-cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.mini-cal-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.mini-cal-day-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.mini-cal-day-cell:hover:not(.empty-day) {
+  background-color: var(--primary-100);
+  color: var(--primary-700);
+}
+
+.mini-cal-day-cell.other-month {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.mini-cal-day-cell.selected-day {
+  background-color: #f97316 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.4);
+}
+
+.mini-cal-day-cell.current-day:not(.selected-day) {
+  border: 1.5px solid var(--primary-500);
+  font-weight: 700;
+  color: var(--primary-600);
+}
+
+.mini-cal-dot {
+  position: absolute;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--primary-500);
+}
+
+.mini-cal-day-cell.selected-day .mini-cal-dot {
+  background-color: #ffffff;
+}
+
+/* Modal Enhancements */
+.modal-roster-table th {
+  background-color: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.modal-roster-table td {
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.modal-header-banner {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  padding: 18px 24px;
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

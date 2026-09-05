@@ -1,11 +1,11 @@
 import React from 'react';
 import { UserButton } from '@clerk/clerk-react';
 import { useAppAuth } from '../../context/AuthContext';
-import { Bell, Moon, Sun, ShieldAlert, Sparkles, UserCheck } from 'lucide-react';
+import { Bell, Moon, Sun, ShieldAlert, Sparkles, UserCheck, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { NotificationBell } from '../notifications/NotificationBell';
 
-export const Header = () => {
+export const Header = ({ onToggleMobileSidebar }) => {
   const { profile, role, realRole, isImpersonating, setImpersonatedRole } = useAppAuth();
   const [isDark, setIsDark] = React.useState(false);
   const navigate = useNavigate();
@@ -49,20 +49,31 @@ export const Header = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 32px',
+      padding: '0 20px',
       position: 'sticky',
       top: 0,
       zIndex: 10
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Mobile Hamburger Toggle */}
+        <button
+          onClick={onToggleMobileSidebar}
+          className="mobile-only btn btn-secondary btn-sm"
+          style={{ padding: '6px 8px', borderRadius: 'var(--radius-sm)' }}
+          aria-label="Mở menu thanh bên"
+          title="Mở menu"
+        >
+          <Menu size={20} />
+        </button>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Vai trò:</span>
+          <span className="desktop-only" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Vai trò:</span>
           {getRoleBadge(role)}
         </div>
 
         {/* Role Switcher for Admin test mode */}
         {realRole === 'admin' && (
-          <div style={{
+          <div className="desktop-only" style={{
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
@@ -99,7 +110,7 @@ export const Header = () => {
         )}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button
           onClick={toggleTheme}
           className="btn btn-secondary btn-sm"
@@ -114,8 +125,8 @@ export const Header = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <UserButton afterSignOutUrl="/" />
           {profile && (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-primary)' }}>
+            <div className="desktop-only" style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-primary)', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {profile.full_name || 'Người dùng'}
               </span>
             </div>

@@ -128,6 +128,7 @@ button, input, select, textarea {
 .app-container {
   display: flex;
   min-height: 100vh;
+  position: relative;
 }
 
 .main-content {
@@ -142,6 +143,85 @@ button, input, select, textarea {
   padding: 24px 32px;
   flex: 1;
 }
+
+/* Sidebar & Mobile Drawer */
+.app-sidebar {
+  width: var(--sidebar-width);
+  background-color: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  gap: 24px;
+  flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+.mobile-only {
+  display: none !important;
+}
+
+.desktop-only {
+  display: flex !important;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1000;
+    width: 280px;
+    box-shadow: 0 0 32px rgba(0, 0, 0, 0.35);
+    transform: translateX(-100%);
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 999;
+    animation: fadeIn 0.2s ease-in-out;
+  }
+
+  .page-body {
+    padding: 16px 12px !important;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: flex !important;
+  }
+
+  .modal-responsive {
+    max-width: 95vw !important;
+    max-height: 92vh !important;
+    padding: 20px 16px !important;
+    overflow-y: auto !important;
+  }
+}
+
 
 /* Glassmorphic Elements */
 .glass-card {
