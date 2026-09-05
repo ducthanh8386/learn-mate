@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const MiniCalendar = ({ selectedDate, onSelectDate, schedules = [] }) => {
@@ -11,7 +11,7 @@ export const MiniCalendar = ({ selectedDate, onSelectDate, schedules = [] }) => 
   }, [selectedDate]);
 
   const year = viewDate.getFullYear();
-  const month = viewDate.getMonth(); // 0-indexed
+  const month = viewDate.getMonth(); // 0-indexed: 0-11
 
   const prevMonth = () => {
     setViewDate(new Date(year, month - 1, 1));
@@ -27,55 +27,62 @@ export const MiniCalendar = ({ selectedDate, onSelectDate, schedules = [] }) => 
   const daysInMonth = lastDayOfMonth.getDate();
 
   // Day of week for 1st of month: 0 (Sun) to 6 (Sat)
-  // We want Monday as index 0, Sunday as index 6
+  // Convert to Monday = 0 ... Sunday = 6
   let firstDayIndex = firstDayOfMonth.getDay() - 1;
-  if (firstDayIndex === -1) firstDayIndex = 6; // Sunday becomes 6
+  if (firstDayIndex === -1) firstDayIndex = 6;
 
-  // Previous month trailing days
-  const prevMonthLastDay = new Date(year, month, 0).getDate();
-  const prevDays = [];
-  for (let i = firstDayIndex - 1; i >= 0; i--) {
-    prevDays.push({
-      day: prevMonthLastDay - i,
-      month: month - 1,
-      year: month === 0 ? year - 1 : year,
-      isCurrentMonth: false,
-    });
-  }
+  // Memoize all calendar days for the current view month
+  const allCalendarDays = useMemo(() => {
+    const prevDays = [];
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const dt = new Date(year, month, -i);
+      prevDays.push({
+        day: dt.getDate(),
+        month: dt.getMonth(),
+        year: dt.getFullYear(),
+        isCurrentMonth: false,
+      });
+    }
 
-  // Current month days
-  const currentDays = [];
-  for (let d = 1; d <= daysInMonth; d++) {
-    currentDays.push({
-      day: d,
-      month,
-      year,
-      isCurrentMonth: true,
-    });
-  }
+    const currentDays = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      currentDays.push({
+        day: d,
+        month,
+        year,
+        isCurrentMonth: true,
+      });
+    }
 
-  // Next month leading days to complete the 7-col grid (up to 35 or 42 cells)
-  const totalSlots = Math.ceil((prevDays.length + currentDays.length) / 7) * 7;
-  const nextDaysCount = totalSlots - (prevDays.length + currentDays.length);
-  const nextDays = [];
-  for (let d = 1; d <= nextDaysCount; d++) {
-    nextDays.push({
-      day: d,
-      month: month + 1,
-      year: month === 11 ? year + 1 : year,
-      isCurrentMonth: false,
-    });
-  }
+    const totalSlots = Math.ceil((prevDays.length + currentDays.length) / 7) * 7;
+    const nextDaysCount = totalSlots - (prevDays.length + currentDays.length);
+    const nextDays = [];
+    for (let d = 1; d <= nextDaysCount; d++) {
+      const dt = new Date(year, month + 1, d);
+      nextDays.push({
+        day: dt.getDate(),
+        month: dt.getMonth(),
+        year: dt.getFullYear(),
+        isCurrentMonth: false,
+      });
+    }
 
-  const allCalendarDays = [...prevDays, ...currentDays, ...nextDays];
+    return [...prevDays, ...currentDays, ...nextDays];
+  }, [year, month, daysInMonth, firstDayIndex]);
 
   // Set of dates that have schedules: format 'YYYY-MM-DD'
-  const scheduleDateSet = new Set(
-    schedules.map((s) => {
-      const d = new Date(s.start_time);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    })
-  );
+  const scheduleDateSet = useMemo(() => {
+    return new Set(
+      schedules
+        .filter((s) => s?.start_time)
+        .map((s) => {
+          const d = new Date(s.start_time);
+          if (isNaN(d.getTime())) return null;
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        })
+        .filter(Boolean)
+    );
+  }, [schedules]);
 
   const isToday = (d, m, y) => {
     const today = new Date();

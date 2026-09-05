@@ -44,7 +44,21 @@ export const ScheduleDetailModal = ({
 
       if (mErr) throw mErr;
 
-      const studentList = members?.map((m) => m.profiles).filter(Boolean) || [];
+      const studentList = (members || []).map((m) => {
+        if (m.profiles?.full_name) {
+          return {
+            ...m.profiles,
+            id: m.student_id, // ensure student_id is used as id
+          };
+        }
+        return {
+          id: m.student_id,
+          full_name: 'Học sinh',
+          avatar_url: null,
+          phone: null,
+        };
+      });
+
       // Sort alphabetically by full name
       studentList.sort((a, b) => (a.full_name || '').localeCompare(b.full_name || '', 'vi'));
       setStudents(studentList);
@@ -115,6 +129,10 @@ export const ScheduleDetailModal = ({
   };
 
   const handleSaveAttendance = async () => {
+    if (students.length === 0) {
+      alert('Lớp học chưa có học sinh để lưu điểm danh.');
+      return;
+    }
     setSaving(true);
     try {
       const records = students.map((st) => ({

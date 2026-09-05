@@ -105,6 +105,8 @@ export const CreateScheduleModal = ({
 
     const startObj = new Date(startTime);
     const endObj = new Date(endTime);
+    if (isNaN(startObj.getTime()) || isNaN(endObj.getTime())) return [];
+    if (endObj <= startObj) return [];
     const durationMs = endObj.getTime() - startObj.getTime();
 
     // Find Monday of the base week
@@ -159,6 +161,9 @@ export const CreateScheduleModal = ({
 
       const startD = new Date(startTime);
       const endD = new Date(endTime);
+      if (isNaN(startD.getTime()) || isNaN(endD.getTime())) {
+        throw new Error('Thời gian bắt đầu hoặc kết thúc không hợp lệ.');
+      }
       if (endD <= startD) {
         throw new Error('Giờ kết thúc phải sau giờ bắt đầu.');
       }

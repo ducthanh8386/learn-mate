@@ -15,7 +15,7 @@ export const WeeklyTimetable = ({
   title = 'Lịch học',
 }) => {
   // Compute start of week (Monday)
-  const curr = new Date(selectedDate);
+  const curr = selectedDate ? new Date(selectedDate) : new Date();
   const dayOfWeek = curr.getDay(); // 0 is Sun, 1 is Mon...
   const distanceToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   
@@ -27,32 +27,35 @@ export const WeeklyTimetable = ({
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
+    d.setHours(0, 0, 0, 0);
     return d;
   });
 
   const sunday = weekDays[6];
 
   const handlePrevWeek = () => {
-    const prev = new Date(selectedDate);
+    const prev = new Date(curr);
     prev.setDate(prev.getDate() - 7);
-    onSelectDate(prev);
+    if (onSelectDate) onSelectDate(prev);
   };
 
   const handleNextWeek = () => {
-    const next = new Date(selectedDate);
+    const next = new Date(curr);
     next.setDate(next.getDate() + 7);
-    onSelectDate(next);
+    if (onSelectDate) onSelectDate(next);
   };
 
   const handleToday = () => {
-    onSelectDate(new Date());
+    if (onSelectDate) onSelectDate(new Date());
   };
 
   const formatDate = (date) => {
+    if (!date) return '—';
     return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
   };
 
   const isSameDay = (d1, d2) => {
+    if (!d1 || !d2) return false;
     return (
       d1.getFullYear() === d2.getFullYear() &&
       d1.getMonth() === d2.getMonth() &&
@@ -65,7 +68,9 @@ export const WeeklyTimetable = ({
   // Find schedules for a specific day and hour slot
   const getSchedulesForSlot = (dayDate, hour) => {
     return schedules.filter((sch) => {
+      if (!sch?.start_time) return false;
       const schStart = new Date(sch.start_time);
+      if (isNaN(schStart.getTime())) return false;
       if (!isSameDay(schStart, dayDate)) return false;
       const schHour = schStart.getHours();
       return schHour === hour;
@@ -136,13 +141,13 @@ export const WeeklyTimetable = ({
             {/* Header: 7 Days */}
             {weekDays.map((dayDate, idx) => {
               const isTodayCol = isSameDay(dayDate, now);
-              const isSelectedCol = isSameDay(dayDate, selectedDate);
+              const isSelectedCol = isSameDay(dayDate, curr);
 
               return (
                 <div
                   key={idx}
                   className={`timetable-header-cell ${isTodayCol || isSelectedCol ? 'today-header' : ''}`}
-                  onClick={() => onSelectDate(dayDate)}
+                  onClick={() => onSelectDate && onSelectDate(dayDate)}
                   style={{ cursor: 'pointer' }}
                 >
                   <span className="timetable-header-date">{formatDate(dayDate)}</span>
@@ -170,9 +175,8 @@ export const WeeklyTimetable = ({
                       className={`timetable-slot ${isTodayCol ? 'today-col' : ''} ${
                         isTeacher ? 'slot-clickable' : ''
                       }`}
-                      onClick={(e) => {
-                        // Only trigger slot click if clicking directly on slot background
-                        if (e.target === e.currentTarget && isTeacher && onSlotClick) {
+                      onClick={() => {
+                        if (isTeacher && onSlotClick) {
                           onSlotClick(dayDate, hour);
                         }
                       }}
@@ -180,10 +184,7 @@ export const WeeklyTimetable = ({
                     >
                       {/* Teacher hover plus indicator */}
                       {isTeacher && slotSchedules.length === 0 && (
-                        <div
-                          className="slot-add-indicator"
-                          onClick={() => onSlotClick && onSlotClick(dayDate, hour)}
-                        >
+                        <div className="slot-add-indicator">
                           <Plus size={14} />
                         </div>
                       )}
@@ -192,7 +193,7 @@ export const WeeklyTimetable = ({
                       {slotSchedules.map((sch) => {
                         const startD = new Date(sch.start_time);
                         const endD = new Date(sch.end_time);
-                        const isPast = endD < now;
+                        const isPast = !isNaN(endD.getTime()) && endD < now;
                         const isCompleted = sch.status === 'completed';
                         const attendanceCount = sch.attendance?.[0]?.count || 0;
 
@@ -218,8 +219,8 @@ export const WeeklyTimetable = ({
                             <div className="schedule-card-time">
                               <Clock size={10} />
                               <span>
-                                {startD.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} -{' '}
-                                {endD.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                {!isNaN(startD.getTime()) ? startD.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '—'} -{' '}
+                                {!isNaN(endD.getTime()) ? endD.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '—'}
                               </span>
                             </div>
 

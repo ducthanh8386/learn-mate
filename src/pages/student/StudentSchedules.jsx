@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useAppAuth } from '../../context/AuthContext';
 import { 
   Calendar as CalendarIcon, 
@@ -7,6 +7,7 @@ import {
   CheckCircle2, 
   Users
 } from 'lucide-react';
+import { SkeletonTimetable } from '../../components/common';
 import { 
   WeeklyTimetable, 
   MiniCalendar, 
@@ -44,7 +45,13 @@ export const StudentSchedules = () => {
         const { data: schList, error: sErr } = await supabaseClient
           .from('schedules')
           .select(`
-            *,
+            id,
+            class_id,
+            title,
+            start_time,
+            end_time,
+            meeting_url,
+            status,
             classes (id, name, subject)
           `)
           .in('class_id', classIds)
@@ -57,7 +64,10 @@ export const StudentSchedules = () => {
         const { data: attList, error: aErr } = await supabaseClient
           .from('attendance')
           .select(`
-            *,
+            id,
+            status,
+            note,
+            marked_at,
             schedules (title, start_time, end_time),
             classes (name, subject)
           `)
@@ -83,13 +93,19 @@ export const StudentSchedules = () => {
     }
   }, [user?.id, supabaseClient]);
 
-  const now = new Date();
-  const upcomingSchedules = schedules.filter((s) => new Date(s.end_time) >= now);
+  const upcomingSchedules = useMemo(() => {
+    const now = new Date();
+    return schedules.filter((s) => new Date(s.end_time) >= now);
+  }, [schedules]);
+
   const nextSession = upcomingSchedules[0];
 
-  // Attendance stats
+  // Attendance stats memoized
   const totalMarked = attendanceHistory.length;
-  const presentCount = attendanceHistory.filter((a) => a.status === 'present' || a.status === 'late').length;
+  const presentCount = useMemo(() => {
+    return attendanceHistory.filter((a) => a.status === 'present' || a.status === 'late').length;
+  }, [attendanceHistory]);
+
   const attendanceRate = totalMarked > 0 ? Math.round((presentCount / totalMarked) * 100) : 100;
 
   return (
@@ -182,9 +198,7 @@ export const StudentSchedules = () => {
       {activeTab === 'timetable' && (
         <div>
           {loading ? (
-            <div className="glass-card" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              Đang tải thời khóa biểu...
-            </div>
+            <SkeletonTimetable />
           ) : (
             <div className="schedule-main-layout">
               {/* Left Column: Weekly Timetable */}

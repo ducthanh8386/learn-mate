@@ -109,3 +109,62 @@ export const SkeletonCardGrid = ({ count = 6 }) => {
     </div>
   );
 };
+
+/**
+ * Skeleton for Weekly Timetable & Calendar
+ */
+export const SkeletonTimetable = () => {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+      {/* Top bar skeleton */}
+      <div className="glass-card" style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <SkeletonBox width="24px" height="24px" borderRadius="50%" />
+          <SkeletonBox width="140px" height="20px" />
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <SkeletonBox width="34px" height="34px" borderRadius="var(--radius-md)" />
+          <SkeletonBox width="80px" height="34px" borderRadius="var(--radius-md)" />
+          <SkeletonBox width="34px" height="34px" borderRadius="var(--radius-md)" />
+          <SkeletonBox width="160px" height="34px" borderRadius="var(--radius-md)" />
+        </div>
+      </div>
+
+      {/* Main 2-column skeleton */}
+      <div className="schedule-main-layout">
+        {/* Weekly Grid Skeleton */}
+        <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '70px repeat(7, 1fr)', gap: '8px', paddingBottom: '12px', borderBottom: '1px solid var(--border-subtle)' }}>
+            <SkeletonBox width="100%" height="32px" />
+            {Array.from({ length: 7 }).map((_, i) => (
+              <SkeletonBox key={i} width="100%" height="32px" />
+            ))}
+          </div>
+          {Array.from({ length: 8 }).map((_, r) => (
+            <div key={r} style={{ display: 'grid', gridTemplateColumns: '70px repeat(7, 1fr)', gap: '8px' }}>
+              <SkeletonBox width="100%" height="56px" />
+              {Array.from({ length: 7 }).map((_, c) => (
+                <SkeletonBox key={c} width="100%" height="56px" borderRadius="var(--radius-sm)" />
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Mini Calendar Skeleton */}
+        <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <SkeletonBox width="100%" height="40px" borderRadius="var(--radius-md)" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+            {Array.from({ length: 7 }).map((_, i) => (
+              <SkeletonBox key={i} width="100%" height="16px" />
+            ))}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+            {Array.from({ length: 35 }).map((_, i) => (
+              <SkeletonBox key={i} width="100%" height="28px" borderRadius="50%" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

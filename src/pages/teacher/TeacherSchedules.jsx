@@ -5,7 +5,7 @@ import {
   Plus, 
   Filter
 } from 'lucide-react';
-import { ErrorState } from '../../components/common';
+import { ErrorState, SkeletonTimetable } from '../../components/common';
 import { 
   WeeklyTimetable, 
   MiniCalendar, 
@@ -52,7 +52,13 @@ export const TeacherSchedules = () => {
         let query = supabaseClient
           .from('schedules')
           .select(`
-            *,
+            id,
+            class_id,
+            title,
+            start_time,
+            end_time,
+            meeting_url,
+            status,
             classes (id, name, subject),
             attendance (count)
           `)
@@ -148,9 +154,7 @@ export const TeacherSchedules = () => {
       </div>
 
       {loading ? (
-        <div className="glass-card" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
-          Đang tải thời khóa biểu...
-        </div>
+        <SkeletonTimetable />
       ) : fetchError ? (
         <ErrorState message={fetchError} onRetry={fetchClassesAndSchedules} />
       ) : classes.length === 0 ? (
