@@ -76,7 +76,17 @@ export const TeacherStudents = () => {
         // Aggregate stats per student
         const enrichedStudents = (memberList || []).map((m) => {
           const sId = m.student_id;
-          const stProfile = m.profiles;
+          const rawProf = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+          const stProfile = rawProf ? {
+            ...rawProf,
+            full_name: rawProf.full_name?.trim() || 'Học sinh',
+          } : {
+            id: sId,
+            full_name: 'Học sinh',
+            phone: null,
+            avatar_url: null,
+            is_active: true,
+          };
 
           // Attendance rate
           const studentAtts = (attList || []).filter((a) => a.student_id === sId);
@@ -314,7 +324,7 @@ export const TeacherStudents = () => {
                         {st.profile?.full_name?.charAt(0)?.toUpperCase() || 'H'}
                       </div>
                       <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>
-                        {st.profile?.full_name}
+                        {st.profile?.full_name || 'Học sinh'}
                       </span>
                     </div>
                   </td>

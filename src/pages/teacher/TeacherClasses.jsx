@@ -6,11 +6,11 @@ import {
   Copy, 
   Check, 
   RefreshCw, 
-  BookOpen, 
   Calendar, 
-  MoreVertical,
   X,
-  AlertCircle
+  AlertCircle,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { ErrorState, FormField } from '../../components/common';
 
@@ -22,7 +22,7 @@ export const TeacherClasses = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(null);
 
-  // Form states
+  // Form states (Create)
   const [name, setName] = useState('');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -30,6 +30,17 @@ export const TeacherClasses = () => {
   const [scheduleText, setScheduleText] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState(null);
+
+  // Form states (Edit)
+  const [editingClass, setEditingClass] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editSubject, setEditSubject] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editMaxStudents, setEditMaxStudents] = useState(30);
+  const [editScheduleText, setEditScheduleText] = useState('');
+  const [editStatus, setEditStatus] = useState('active');
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState(null);
 
   const fetchClasses = async () => {
     try {
@@ -126,6 +137,67 @@ export const TeacherClasses = () => {
     }
   };
 
+  const handleOpenEdit = (classItem) => {
+    setEditingClass(classItem);
+    setEditName(classItem.name || '');
+    setEditSubject(classItem.subject || '');
+    setEditDescription(classItem.description || '');
+    setEditMaxStudents(classItem.max_students || 30);
+    setEditScheduleText(classItem.schedule_text || '');
+    setEditStatus(classItem.status || 'active');
+    setEditError(null);
+  };
+
+  const handleUpdateClass = async (e) => {
+    e.preventDefault();
+    if (!editingClass) return;
+    setEditLoading(true);
+    setEditError(null);
+
+    try {
+      const { error } = await supabaseClient
+        .from('classes')
+        .update({
+          name: editName.trim(),
+          subject: editSubject.trim(),
+          description: editDescription.trim(),
+          max_students: Number(editMaxStudents),
+          schedule_text: editScheduleText.trim(),
+          status: editStatus,
+        })
+        .eq('id', editingClass.id);
+
+      if (error) throw error;
+
+      setEditingClass(null);
+      await fetchClasses();
+    } catch (err) {
+      console.error('Error updating class:', err);
+      setEditError(err.message || 'Không thể cập nhật lớp học.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleDeleteClass = async (classItem) => {
+    const memberCount = classItem.class_members?.[0]?.count || 0;
+    const confirmMsg = `Bạn có chắc chắn muốn xóa lớp "${classItem.name}" không?\n\nLưu ý: Thao tác này sẽ xóa toàn bộ danh sách thành viên (${memberCount} học sinh), lịch học, tài liệu và các dữ liệu liên quan thuộc lớp này. Hành động này không thể hoàn tác!`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const { error } = await supabaseClient
+        .from('classes')
+        .delete()
+        .eq('id', classItem.id);
+
+      if (error) throw error;
+      await fetchClasses();
+    } catch (err) {
+      console.error('Error deleting class:', err);
+      alert('Không thể xóa lớp học: ' + (err.message || 'Đã xảy ra lỗi'));
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
@@ -169,7 +241,7 @@ export const TeacherClasses = () => {
             const memberCount = c.class_members?.[0]?.count || 0;
             return (
               <div key={c.id} className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                   <div>
                     <span className="badge badge-primary" style={{ marginBottom: '8px' }}>
                       {c.subject}
@@ -178,9 +250,29 @@ export const TeacherClasses = () => {
                       {c.name}
                     </h3>
                   </div>
-                  <span className={`badge ${c.status === 'active' ? 'badge-success' : 'badge-warning'}`}>
-                    {c.status === 'active' ? 'Đang hoạt động' : 'Đã lưu trữ'}
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                    <span className={`badge ${c.status === 'active' ? 'badge-success' : 'badge-warning'}`}>
+                      {c.status === 'active' ? 'Đang hoạt động' : 'Đã lưu trữ'}
+                    </span>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleOpenEdit(c)}
+                        title="Chỉnh sửa lớp học"
+                        style={{ padding: '5px 8px' }}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDeleteClass(c)}
+                        title="Xóa lớp học"
+                        style={{ padding: '5px 8px' }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {c.description && (
@@ -357,6 +449,142 @@ export const TeacherClasses = () => {
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={formLoading} style={{ flex: 1 }}>
                   {formLoading ? 'Đang tạo...' : 'Tạo lớp học'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Chỉnh Sửa Lớp Học */}
+      {editingClass && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          padding: '20px'
+        }}>
+          <div className="glass-card" style={{
+            maxWidth: '520px',
+            width: '100%',
+            backgroundColor: 'var(--bg-surface)',
+            padding: '32px',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setEditingClass(null)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer'
+              }}
+            >
+              <X size={20} />
+            </button>
+
+            <form onSubmit={handleUpdateClass} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>Chỉnh Sửa Lớp Học</h2>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                  Mã lớp: <strong>{editingClass.class_code}</strong>
+                </p>
+              </div>
+
+              {editError && (
+                <div style={{
+                  backgroundColor: 'var(--danger-50)',
+                  color: 'var(--danger-600)',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <AlertCircle size={16} />
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              <FormField
+                id="edit-class-name"
+                label="Tên lớp học"
+                required
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="VD: Lớp Toán 12 - Luyện Đề VIP"
+              />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <FormField
+                  id="edit-class-subject"
+                  label="Môn học"
+                  required
+                  value={editSubject}
+                  onChange={(e) => setEditSubject(e.target.value)}
+                  placeholder="VD: Toán học"
+                />
+
+                <FormField
+                  id="edit-class-status"
+                  label="Trạng thái"
+                  type="select"
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  options={[
+                    { value: 'active', label: 'Đang hoạt động' },
+                    { value: 'archived', label: 'Đã lưu trữ (Khóa)' }
+                  ]}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <FormField
+                  id="edit-class-max-students"
+                  label="Sĩ số tối đa"
+                  type="number"
+                  min="1"
+                  max="500"
+                  value={editMaxStudents}
+                  onChange={(e) => setEditMaxStudents(e.target.value)}
+                />
+
+                <FormField
+                  id="edit-class-schedule"
+                  label="Lịch học dự kiến"
+                  value={editScheduleText}
+                  onChange={(e) => setEditScheduleText(e.target.value)}
+                  placeholder="VD: T3 - T5 (19h30)"
+                />
+              </div>
+
+              <FormField
+                id="edit-class-description"
+                label="Mô tả lớp học"
+                type="textarea"
+                rows={3}
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Mô tả mục tiêu, đối tượng học sinh của lớp..."
+              />
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setEditingClass(null)} style={{ flex: 1 }}>
+                  Hủy
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={editLoading} style={{ flex: 1 }}>
+                  {editLoading ? 'Đang lưu...' : 'Lưu Thay Đổi'}
                 </button>
               </div>
             </form>

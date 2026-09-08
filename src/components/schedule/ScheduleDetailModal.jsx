@@ -45,17 +45,19 @@ export const ScheduleDetailModal = ({
       if (mErr) throw mErr;
 
       const studentList = (members || []).map((m) => {
-        if (m.profiles?.full_name) {
+        const rawProf = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+        if (rawProf?.full_name?.trim()) {
           return {
-            ...m.profiles,
+            ...rawProf,
             id: m.student_id, // ensure student_id is used as id
+            full_name: rawProf.full_name.trim(),
           };
         }
         return {
           id: m.student_id,
           full_name: 'Học sinh',
-          avatar_url: null,
-          phone: null,
+          avatar_url: rawProf?.avatar_url || null,
+          phone: rawProf?.phone || null,
         };
       });
 
@@ -102,10 +104,12 @@ export const ScheduleDetailModal = ({
 
   // Split Vietnamese full name into Last/Middle name and First name
   const splitFullName = (fullName = '') => {
-    const trimmed = fullName.trim();
-    if (!trimmed) return { hoDem: '—', ten: '—' };
+    const trimmed = (fullName || '').trim();
+    if (!trimmed || trimmed.toLowerCase() === 'học sinh' || trimmed.toLowerCase() === 'chưa cập nhật') {
+      return { hoDem: '—', ten: trimmed || 'Học sinh' };
+    }
     const parts = trimmed.split(/\s+/);
-    if (parts.length === 1) return { hoDem: '', ten: parts[0] };
+    if (parts.length === 1) return { hoDem: '—', ten: parts[0] };
     const ten = parts.pop();
     const hoDem = parts.join(' ');
     return { hoDem, ten };

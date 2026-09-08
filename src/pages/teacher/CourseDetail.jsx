@@ -1,24 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppAuth } from '../../context/AuthContext';
 import { LessonContentEditor } from '../../components/course/LessonContentEditor';
+import { FormField } from '../../components/common';
 import { 
   ArrowLeft, 
   Plus, 
   Layers, 
-  BookOpen, 
   ChevronDown, 
   ChevronRight, 
   Trash2, 
   Eye, 
   EyeOff, 
   AlertCircle,
-  FileText,
-  Video
+  Pencil,
+  X
 } from 'lucide-react';
 
 export const CourseDetail = () => {
   const { courseId } = useParams();
+  const navigate = useNavigate();
   const { supabaseClient } = useAppAuth();
 
   const [course, setCourse] = useState(null);
@@ -28,6 +29,15 @@ export const CourseDetail = () => {
 
   // Expanded states
   const [expandedLessons, setExpandedLessons] = useState({});
+
+  // Course edit state
+  const [isEditCourseOpen, setIsEditCourseOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editStatus, setEditStatus] = useState('PUBLISHED');
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState(null);
+  const [deletingCourse, setDeletingCourse] = useState(false);
 
   // Module creation state
   const [isAddingModule, setIsAddingModule] = useState(false);
@@ -194,6 +204,62 @@ export const CourseDetail = () => {
     }));
   };
 
+  const handleOpenEditCourse = () => {
+    if (!course) return;
+    setEditTitle(course.title || '');
+    setEditDescription(course.description || '');
+    setEditStatus(course.status || 'PUBLISHED');
+    setEditError(null);
+    setIsEditCourseOpen(true);
+  };
+
+  const handleUpdateCourse = async (e) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError(null);
+
+    try {
+      const { error: updErr } = await supabaseClient
+        .from('courses')
+        .update({
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+          status: editStatus,
+        })
+        .eq('id', courseId);
+
+      if (updErr) throw updErr;
+
+      setIsEditCourseOpen(false);
+      await fetchCourseData();
+    } catch (err) {
+      console.error('Error updating course:', err);
+      setEditError(err.message || 'Không thể cập nhật khóa học.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleDeleteCourse = async () => {
+    const confirmMsg = `Bạn có chắc chắn muốn xóa khóa học "${course.title}" không?\n\nLưu ý: Toàn bộ các chương, bài giảng và tài liệu đính kèm bên trong khóa học này sẽ bị xóa vĩnh viễn! Thao tác này không thể hoàn tác.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setDeletingCourse(true);
+    try {
+      const { error: delErr } = await supabaseClient
+        .from('courses')
+        .delete()
+        .eq('id', courseId);
+
+      if (delErr) throw delErr;
+      navigate('/teacher/courses');
+    } catch (err) {
+      console.error('Error deleting course:', err);
+      alert('Không thể xóa khóa học: ' + (err.message || 'Đã xảy ra lỗi'));
+      setDeletingCourse(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -247,9 +313,26 @@ export const CourseDetail = () => {
             )}
           </div>
 
-          <button className="btn btn-primary" onClick={() => setIsAddingModule(true)}>
-            <Plus size={16} /> Thêm Chương Mới
-          </button>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={handleOpenEditCourse}
+              title="Chỉnh sửa thông tin khóa học"
+            >
+              <Pencil size={15} /> Sửa Khóa Học
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={handleDeleteCourse}
+              disabled={deletingCourse}
+              title="Xóa khóa học này"
+            >
+              <Trash2 size={15} /> {deletingCourse ? 'Đang xóa...' : 'Xóa Khóa Học'}
+            </button>
+            <button className="btn btn-primary" onClick={() => setIsAddingModule(true)}>
+              <Plus size={16} /> Thêm Chương Mới
+            </button>
+          </div>
         </div>
       </div>
 
@@ -483,6 +566,111 @@ export const CourseDetail = () => {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal Chỉnh Sửa Thông Tin Khóa Học */}
+      {isEditCourseOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          padding: '20px'
+        }}>
+          <div className="glass-card" style={{
+            maxWidth: '520px',
+            width: '100%',
+            backgroundColor: 'var(--bg-surface)',
+            padding: '32px',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setIsEditCourseOpen(false)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer'
+              }}
+            >
+              <X size={20} />
+            </button>
+
+            <form onSubmit={handleUpdateCourse} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>Chỉnh Sửa Khóa Học</h2>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                  Lớp học: <strong>{course.classes?.name} ({course.classes?.subject})</strong>
+                </p>
+              </div>
+
+              {editError && (
+                <div style={{
+                  backgroundColor: 'var(--danger-50)',
+                  color: 'var(--danger-600)',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <AlertCircle size={16} />
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              <FormField
+                id="detail-edit-course-title"
+                label="Tiêu đề Khóa học"
+                required
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="VD: Chuyên đề Đại số & Giải tích 12"
+              />
+
+              <FormField
+                id="detail-edit-course-description"
+                label="Mô tả khóa học"
+                type="textarea"
+                rows={3}
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Mô tả nội dung, lộ trình học tập..."
+              />
+
+              <FormField
+                id="detail-edit-course-status"
+                label="Trạng thái phát hành"
+                type="select"
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value)}
+                options={[
+                  { value: 'PUBLISHED', label: 'Công khai (PUBLISHED) - Học sinh thấy ngay' },
+                  { value: 'DRAFT', label: 'Bản nháp (DRAFT) - Ẩn với học sinh' },
+                ]}
+              />
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsEditCourseOpen(false)} style={{ flex: 1 }}>
+                  Hủy
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={editLoading} style={{ flex: 1 }}>
+                  {editLoading ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

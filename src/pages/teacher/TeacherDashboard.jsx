@@ -341,7 +341,7 @@ export const TeacherDashboard = () => {
                 >
                   <div>
                     <span style={{ fontWeight: '700', fontSize: '0.875rem', display: 'block' }}>
-                      {sub.profiles?.full_name}
+                      {sub.profiles?.full_name || 'Học sinh'}
                     </span>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       {sub.assignments?.title} ({sub.assignments?.classes?.name})
@@ -390,7 +390,7 @@ export const TeacherDashboard = () => {
                 >
                   <div>
                     <span style={{ fontWeight: '700', fontSize: '0.875rem', display: 'block' }}>
-                      {inv.profiles?.full_name}
+                      {inv.profiles?.full_name || 'Học sinh'}
                     </span>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       {inv.period} ({inv.classes?.name})

@@ -60,7 +60,14 @@ export const TeacherTuition = () => {
           .select('student_id, profiles:student_id (id, full_name, phone)')
           .eq('class_id', targetClassId);
 
-        const students = (members || []).map((m) => m.profiles).filter(Boolean);
+        const students = (members || []).map((m) => {
+          const rawProf = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+          return {
+            id: m.student_id,
+            full_name: rawProf?.full_name?.trim() || 'Học sinh',
+            phone: rawProf?.phone || null,
+          };
+        });
         setClassStudents(students);
         if (students.length > 0 && !singleStudentId) setSingleStudentId(students[0].id);
 
@@ -567,7 +574,7 @@ export const TeacherTuition = () => {
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: '800' }}>Ghi Nhận Thu Học Phí</h2>
                 <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                  Học sinh: <strong>{activeInvoiceForPayment.profiles?.full_name}</strong> • {activeInvoiceForPayment.period}
+                  Học sinh: <strong>{activeInvoiceForPayment.profiles?.full_name || 'Học sinh'}</strong> • {activeInvoiceForPayment.period}
                 </p>
               </div>
 

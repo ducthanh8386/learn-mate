@@ -7,7 +7,9 @@ import {
   ArrowRight, 
   X, 
   AlertCircle,
-  FolderOpen
+  FolderOpen,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ErrorState, FormField } from '../../components/common';
@@ -20,7 +22,7 @@ export const TeacherCourses = () => {
   const [fetchError, setFetchError] = useState(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  // Form state
+  // Form state (Create)
   const [classId, setClassId] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -28,6 +30,15 @@ export const TeacherCourses = () => {
   const [status, setStatus] = useState('PUBLISHED');
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState(null);
+
+  // Form state (Edit)
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [editClassId, setEditClassId] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editStatus, setEditStatus] = useState('PUBLISHED');
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -105,6 +116,65 @@ export const TeacherCourses = () => {
     }
   };
 
+  const handleOpenEditCourse = (course) => {
+    setEditingCourse(course);
+    setEditClassId(course.class_id || (classes[0]?.id || ''));
+    setEditTitle(course.title || '');
+    setEditDescription(course.description || '');
+    setEditStatus(course.status || 'PUBLISHED');
+    setEditError(null);
+  };
+
+  const handleUpdateCourse = async (e) => {
+    e.preventDefault();
+    if (!editingCourse) return;
+    setEditLoading(true);
+    setEditError(null);
+
+    try {
+      if (!editClassId) throw new Error('Vui lòng chọn lớp học áp dụng.');
+
+      const { error: updateErr } = await supabaseClient
+        .from('courses')
+        .update({
+          class_id: editClassId,
+          title: editTitle.trim(),
+          description: editDescription.trim(),
+          status: editStatus,
+        })
+        .eq('id', editingCourse.id);
+
+      if (updateErr) throw updateErr;
+
+      setEditingCourse(null);
+      await fetchData();
+    } catch (err) {
+      console.error('Error updating course:', err);
+      setEditError(err.message || 'Không thể cập nhật khóa học.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleDeleteCourse = async (course) => {
+    const moduleCount = course.modules?.length || 0;
+    const confirmMsg = `Bạn có chắc chắn muốn xóa khóa học "${course.title}" không?\n\nLưu ý: Hành động này sẽ xóa toàn bộ ${moduleCount} chương học và tất cả bài giảng, tài liệu video bên trong. Thao tác này không thể hoàn tác!`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const { error: delErr } = await supabaseClient
+        .from('courses')
+        .delete()
+        .eq('id', course.id);
+
+      if (delErr) throw delErr;
+      await fetchData();
+    } catch (err) {
+      console.error('Error deleting course:', err);
+      alert('Không thể xóa khóa học: ' + (err.message || 'Đã xảy ra lỗi'));
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
@@ -172,7 +242,7 @@ export const TeacherCourses = () => {
 
             return (
               <div key={course.id} className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                   <div>
                     <span className="badge badge-primary" style={{ marginBottom: '8px' }}>
                       {course.classes?.name || 'Lớp học'}
@@ -181,9 +251,29 @@ export const TeacherCourses = () => {
                       {course.title}
                     </h3>
                   </div>
-                  <span className={`badge ${course.status === 'PUBLISHED' ? 'badge-success' : 'badge-warning'}`}>
-                    {course.status === 'PUBLISHED' ? 'Đã xuất bản' : 'Bản nháp'}
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                    <span className={`badge ${course.status === 'PUBLISHED' ? 'badge-success' : 'badge-warning'}`}>
+                      {course.status === 'PUBLISHED' ? 'Đã xuất bản' : 'Bản nháp'}
+                    </span>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleOpenEditCourse(course)}
+                        title="Chỉnh sửa khóa học"
+                        style={{ padding: '5px 8px' }}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDeleteCourse(course)}
+                        title="Xóa khóa học"
+                        style={{ padding: '5px 8px' }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {course.description && (
@@ -326,6 +416,122 @@ export const TeacherCourses = () => {
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={formLoading} style={{ flex: 1 }}>
                   {formLoading ? 'Đang tạo...' : 'Tạo Khóa Học'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Chỉnh Sửa Khóa Học */}
+      {editingCourse && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          padding: '20px'
+        }}>
+          <div className="glass-card" style={{
+            maxWidth: '520px',
+            width: '100%',
+            backgroundColor: 'var(--bg-surface)',
+            padding: '32px',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setEditingCourse(null)}
+              aria-label="Đóng cửa sổ"
+              title="Đóng"
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer'
+              }}
+            >
+              <X size={20} />
+            </button>
+
+            <form onSubmit={handleUpdateCourse} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>Chỉnh Sửa Khóa Học</h2>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Cập nhật thông tin và trạng thái khóa học</p>
+              </div>
+
+              {editError && (
+                <div style={{
+                  backgroundColor: 'var(--danger-50)',
+                  color: 'var(--danger-600)',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <AlertCircle size={16} />
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              <FormField
+                id="edit-course-class-select"
+                label="Lớp học áp dụng"
+                type="select"
+                required
+                value={editClassId}
+                onChange={(e) => setEditClassId(e.target.value)}
+                options={classes.map((cls) => ({
+                  value: cls.id,
+                  label: `${cls.name} (${cls.subject})`,
+                }))}
+              />
+
+              <FormField
+                id="edit-course-title"
+                label="Tiêu đề Khóa học"
+                required
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="VD: Chuyên đề Đại số & Giải tích 12"
+              />
+
+              <FormField
+                id="edit-course-description"
+                label="Mô tả khóa học"
+                type="textarea"
+                rows={3}
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Mô tả nội dung, lộ trình học tập..."
+              />
+
+              <FormField
+                id="edit-course-status"
+                label="Trạng thái phát hành"
+                type="select"
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value)}
+                options={[
+                  { value: 'PUBLISHED', label: 'Công khai (PUBLISHED) - Học sinh thấy ngay' },
+                  { value: 'DRAFT', label: 'Bản nháp (DRAFT) - Ẩn với học sinh' },
+                ]}
+              />
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setEditingCourse(null)} style={{ flex: 1 }}>
+                  Hủy
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={editLoading} style={{ flex: 1 }}>
+                  {editLoading ? 'Đang lưu...' : 'Lưu Thay Đổi'}
                 </button>
               </div>
             </form>
