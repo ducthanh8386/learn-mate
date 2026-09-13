@@ -43,64 +43,82 @@ export const TeacherDashboard = () => {
       const now = new Date();
       const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-      // 1. Classes & Students Count
+      // 1. Fetch Classes first to get tutor's active class IDs
       const { data: classesData } = await supabaseClient.from('classes').select('id');
       const classIds = (classesData || []).map((c) => c.id);
 
-      const { count: studentCount } = await supabaseClient
-        .from('class_members')
-        .select('student_id', { count: 'exact', head: true });
+      if (classIds.length === 0) {
+        setStats({
+          classCount: 0,
+          studentCount: 0,
+          pendingGradingCount: 0,
+          totalTuitionCollected: 0,
+          totalTuitionPending: 0,
+        });
+        setUpcomingSchedule(null);
+        setUnmarkedSchedules([]);
+        setPendingSubmissions([]);
+        setUnpaidInvoices([]);
+        return;
+      }
 
-      // 2. Upcoming Schedule (Next 24 hours)
-      const { data: upSch } = await supabaseClient
-        .from('schedules')
-        .select('id, title, class_id, start_time, end_time, meeting_link, classes(name)')
-        .gte('start_time', now.toISOString())
-        .lte('start_time', in24Hours.toISOString())
-        .order('start_time', { ascending: true })
-        .limit(1);
-
-      setUpcomingSchedule(upSch?.[0] || null);
-
-      // 3. Past Schedules with No Attendance Marked
-      if (classIds.length > 0) {
-        const { data: pastSch } = await supabaseClient
+      // 2. Fetch all 5 dashboard datasets concurrently in parallel
+      const [
+        studentCountRes,
+        upcomingSchRes,
+        pastSchRes,
+        pendingSubRes,
+        invoicesRes,
+      ] = await Promise.all([
+        supabaseClient
+          .from('class_members')
+          .select('student_id', { count: 'exact', head: true })
+          .in('class_id', classIds),
+        supabaseClient
+          .from('schedules')
+          .select('id, title, class_id, start_time, end_time, meeting_url, classes(name)')
+          .in('class_id', classIds)
+          .gte('start_time', now.toISOString())
+          .lte('start_time', in24Hours.toISOString())
+          .order('start_time', { ascending: true })
+          .limit(1),
+        supabaseClient
           .from('schedules')
           .select('id, title, class_id, start_time, end_time, classes(name), attendance(count)')
           .in('class_id', classIds)
           .lt('end_time', now.toISOString())
           .order('end_time', { ascending: false })
-          .limit(10);
+          .limit(10),
+        supabaseClient
+          .from('assignment_submissions')
+          .select(`
+            id,
+            submitted_at,
+            assignments!inner (id, title, max_score, class_id, classes(name)),
+            profiles:student_id (full_name)
+          `)
+          .in('assignments.class_id', classIds)
+          .eq('status', 'SUBMITTED')
+          .order('submitted_at', { ascending: true })
+          .limit(5),
+        supabaseClient
+          .from('tuition_invoices')
+          .select('amount_due, amount_paid, status, period, due_date, profiles:student_id(full_name), classes(name)')
+          .in('class_id', classIds),
+      ]);
 
-        const unmarked = (pastSch || []).filter((s) => (s.attendance?.[0]?.count || 0) === 0);
-        setUnmarkedSchedules(unmarked);
-      }
+      setUpcomingSchedule(upcomingSchRes.data?.[0] || null);
 
-      // 4. Pending Assignment Submissions needing grading
-      const { data: subList } = await supabaseClient
-        .from('assignment_submissions')
-        .select(`
-          id,
-          submitted_at,
-          assignments (id, title, max_score, classes(name)),
-          profiles:student_id (full_name)
-        `)
-        .eq('status', 'SUBMITTED')
-        .order('submitted_at', { ascending: true })
-        .limit(5);
+      const unmarked = (pastSchRes.data || []).filter((s) => (s.attendance?.[0]?.count || 0) === 0);
+      setUnmarkedSchedules(unmarked);
 
-      setPendingSubmissions(subList || []);
-
-      // 5. Tuition Overview
-      const { data: invList } = await supabaseClient
-        .from('tuition_invoices')
-        .select('amount_due, amount_paid, status, period, due_date, profiles:student_id(full_name), classes(name)');
+      setPendingSubmissions(pendingSubRes.data || []);
 
       let collected = 0;
       let pending = 0;
       const unpaid = [];
 
-      (invList || []).forEach((inv) => {
+      (invoicesRes.data || []).forEach((inv) => {
         collected += Number(inv.amount_paid) || 0;
         const due = Math.max(0, (Number(inv.amount_due) || 0) - (Number(inv.amount_paid) || 0));
         if (inv.status !== 'paid') {
@@ -200,7 +218,7 @@ export const TeacherDashboard = () => {
       </div>
 
       {/* 4 Core SRS Blocks (2x2 Grid) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
         
         {/* Block 1: Sắp Diễn Ra */}
         <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>

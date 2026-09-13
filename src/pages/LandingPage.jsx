@@ -21,7 +21,7 @@ export const LandingPage = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '16px 32px',
+        padding: '14px clamp(16px, 4vw, 32px)',
         borderBottom: '1px solid var(--border-subtle)',
         background: 'var(--glass-bg)',
         backdropFilter: 'var(--glass-blur)'
@@ -31,26 +31,26 @@ export const LandingPage = () => {
           <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Learn Mate</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Link to="/auth">
-            <button className="btn btn-secondary">Đăng nhập</button>
+            <button className="btn btn-secondary btn-sm" style={{ padding: '7px 14px' }}>Đăng nhập</button>
           </Link>
           <Link to="/auth">
-            <button className="btn btn-primary">Bắt đầu ngay</button>
+            <button className="btn btn-primary btn-sm" style={{ padding: '7px 14px' }}>Bắt đầu ngay</button>
           </Link>
         </div>
       </header>
 
       {/* Hero Section */}
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 20px' }}>
-        <div style={{ maxWidth: '800px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(36px, 6vw, 60px) 16px' }}>
+        <div style={{ maxWidth: '800px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
           <div className="badge badge-primary" style={{ padding: '6px 14px', fontSize: '0.875rem', gap: '6px' }}>
             <Sparkles size={14} /> Nền tảng LMS Gia Sư & Trung Tâm Tinh Gọn
           </div>
 
           <h1 style={{
-            fontSize: '3rem',
-            lineHeight: 1.15,
+            fontSize: 'clamp(1.75rem, 5vw, 3rem)',
+            lineHeight: 1.2,
             fontWeight: '800',
             letterSpacing: '-0.03em',
             color: 'var(--text-primary)'
@@ -58,7 +58,7 @@ export const LandingPage = () => {
             Quản lý lớp học thông minh, đồng hành cùng từng học sinh
           </h1>
 
-          <p style={{ fontSize: '1.125rem', color: 'var(--text-secondary)', maxWidth: '640px', lineHeight: 1.6 }}>
+          <p style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.125rem)', color: 'var(--text-secondary)', maxWidth: '640px', lineHeight: 1.6 }}>
             Tích hợp toàn diện: Lịch dạy, bài giảng YouTube, ngân hàng câu hỏi, bài tập về nhà, điểm danh và quản lý học phí chỉ trong một trang sổ điện tử tinh giản.
           </p>
 

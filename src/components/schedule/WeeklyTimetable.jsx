@@ -231,14 +231,22 @@ export const WeeklyTimetable = ({
                             )}
 
                             {sch.meeting_url && (
-                              <div className="schedule-card-meta" style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#67e8f9' }}>
+                              <div className="schedule-card-badge">
                                 <Video size={10} />
-                                <span>Phòng học trực tuyến</span>
+                                <span>Trực tuyến</span>
                               </div>
                             )}
 
                             {isTeacher && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.625rem', marginTop: '2px', opacity: 0.85 }}>
+                              <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '4px', 
+                                fontSize: '0.65rem', 
+                                marginTop: '2px', 
+                                color: isCompleted ? 'var(--success-600)' : 'var(--text-secondary)',
+                                fontWeight: '600'
+                              }}>
                                 <Users size={10} />
                                 <span>
                                   {isCompleted

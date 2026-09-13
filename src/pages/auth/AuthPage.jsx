@@ -19,11 +19,12 @@ import './AuthPage.css';
 
 export const AuthPage = () => {
   const navigate = useNavigate();
-  const { signIn, isLoaded: isSignInLoaded } = useSignIn();
-  const { signUp, isLoaded: isSignUpLoaded } = useSignUp();
+  const { signIn, isLoaded: isSignInLoaded, setActive: setSignInActive } = useSignIn();
+  const { signUp, isLoaded: isSignUpLoaded, setActive: setSignUpActive } = useSignUp();
 
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -61,18 +62,26 @@ export const AuthPage = () => {
   const handleOAuth = async (provider) => {
     if (provider === 'google') {
       try {
-        setLoading(true);
+        setGoogleLoading(true);
         setErrorMsg('');
 
         if (isActive) {
-          if (!isSignUpLoaded) return;
+          if (!isSignUpLoaded) {
+            setErrorMsg('Đang khởi tạo dịch vụ xác thực, vui lòng thử lại sau vài giây');
+            setGoogleLoading(false);
+            return;
+          }
           await signUp.authenticateWithRedirect({
             strategy: 'oauth_google',
             redirectUrl: '/sso-callback',
             redirectUrlComplete: '/',
           });
         } else {
-          if (!isSignInLoaded) return;
+          if (!isSignInLoaded) {
+            setErrorMsg('Đang khởi tạo dịch vụ xác thực, vui lòng thử lại sau vài giây');
+            setGoogleLoading(false);
+            return;
+          }
           await signIn.authenticateWithRedirect({
             strategy: 'oauth_google',
             redirectUrl: '/sso-callback',
@@ -81,8 +90,8 @@ export const AuthPage = () => {
         }
       } catch (err) {
         console.error('Google OAuth error:', err);
-        setErrorMsg(err.errors?.[0]?.message || err.message || 'Lỗi khi đăng nhập bằng Google');
-        setLoading(false);
+        setErrorMsg(err.errors?.[0]?.message || err.message || 'Lỗi khi đăng nhập bằng Google. Vui lòng kiểm tra cấu hình Google SSO trong Clerk.');
+        setGoogleLoading(false);
       }
     }
   };
@@ -107,8 +116,15 @@ export const AuthPage = () => {
         });
 
         if (result.status === 'complete') {
+          if (setSignInActive) {
+            await setSignInActive({ session: result.createdSessionId });
+          }
           setSuccessMsg('Đăng nhập thành công! Đang chuyển hướng...');
-          setTimeout(() => navigate('/'), 800);
+          setTimeout(() => navigate('/'), 600);
+          return;
+        } else {
+          setErrorMsg('Tài khoản yêu cầu xác minh bổ sung (Mã trạng thái: ' + result.status + ')');
+          setLoading(false);
           return;
         }
       }
@@ -120,7 +136,7 @@ export const AuthPage = () => {
       });
       if (error) throw error;
       setSuccessMsg('Đăng nhập thành công! Đang chuyển hướng...');
-      setTimeout(() => navigate('/'), 800);
+      setTimeout(() => navigate('/'), 600);
     } catch (err) {
       setErrorMsg(err.errors?.[0]?.message || err.message || 'Email hoặc mật khẩu không chính xác');
     } finally {
@@ -154,8 +170,11 @@ export const AuthPage = () => {
         });
 
         if (result.status === 'complete') {
-          setSuccessMsg('Đăng ký thành công!');
-          setTimeout(() => navigate('/'), 800);
+          if (setSignUpActive) {
+            await setSignUpActive({ session: result.createdSessionId });
+          }
+          setSuccessMsg('Đăng ký thành công! Đang đăng nhập...');
+          setTimeout(() => navigate('/'), 600);
           return;
         } else {
           setSuccessMsg('Vui lòng kiểm tra email để xác nhận tài khoản!');
@@ -217,14 +236,25 @@ export const AuthPage = () => {
             <h1>Tạo Tài Khoản</h1>
             <p className="subtext">Tham gia cộng đồng học tập & giảng dạy LearnMate</p>
 
-            <button type="button" className="auth-google-btn" onClick={() => handleOAuth('google')}>
-              <svg width="20" height="20" viewBox="0 0 24 24">
-                <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.4l3.7 2.9C6.5 7.4 9 5 12 5z"/>
-                <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-                <path fill="#FBBC05" d="M5.6 14.7c-.2-.7-.4-1.5-.4-2.7 0-1.2.2-2 .4-2.7L1.9 6.4C.7 8.8 0 10.8 0 12s.7 3.2 1.9 5.6l3.7-2.9z"/>
-                <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.3L1.9 16c1.8 3.8 5.6 7 10.1 7z"/>
-              </svg>
-              <span>Đăng ký bằng Google</span>
+            <button 
+              type="button" 
+              className="auth-google-btn" 
+              onClick={() => handleOAuth('google')}
+              disabled={googleLoading || loading}
+            >
+              {googleLoading ? (
+                <><Loader2 size={18} className="animate-spin" /> Đang kết nối Google...</>
+              ) : (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 24 24">
+                    <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.4l3.7 2.9C6.5 7.4 9 5 12 5z"/>
+                    <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                    <path fill="#FBBC05" d="M5.6 14.7c-.2-.7-.4-1.5-.4-2.7 0-1.2.2-2 .4-2.7L1.9 6.4C.7 8.8 0 10.8 0 12s.7 3.2 1.9 5.6l3.7-2.9z"/>
+                    <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.3L1.9 16c1.8 3.8 5.6 7 10.1 7z"/>
+                  </svg>
+                  <span>Đăng ký bằng Google</span>
+                </>
+              )}
             </button>
 
             <div className="auth-divider">
@@ -323,14 +353,25 @@ export const AuthPage = () => {
             <h1>Đăng Nhập</h1>
             <p className="subtext">Nhập thông tin tài khoản để truy cập hệ thống</p>
 
-            <button type="button" className="auth-google-btn" onClick={() => handleOAuth('google')}>
-              <svg width="20" height="20" viewBox="0 0 24 24">
-                <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.4l3.7 2.9C6.5 7.4 9 5 12 5z"/>
-                <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-                <path fill="#FBBC05" d="M5.6 14.7c-.2-.7-.4-1.5-.4-2.7 0-1.2.2-2 .4-2.7L1.9 6.4C.7 8.8 0 10.8 0 12s.7 3.2 1.9 5.6l3.7-2.9z"/>
-                <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.3L1.9 16c1.8 3.8 5.6 7 10.1 7z"/>
-              </svg>
-              <span>Đăng nhập bằng Google</span>
+            <button 
+              type="button" 
+              className="auth-google-btn" 
+              onClick={() => handleOAuth('google')}
+              disabled={googleLoading || loading}
+            >
+              {googleLoading ? (
+                <><Loader2 size={18} className="animate-spin" /> Đang kết nối Google...</>
+              ) : (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 24 24">
+                    <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.4l3.7 2.9C6.5 7.4 9 5 12 5z"/>
+                    <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                    <path fill="#FBBC05" d="M5.6 14.7c-.2-.7-.4-1.5-.4-2.7 0-1.2.2-2 .4-2.7L1.9 6.4C.7 8.8 0 10.8 0 12s.7 3.2 1.9 5.6l3.7-2.9z"/>
+                    <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.3L1.9 16c1.8 3.8 5.6 7 10.1 7z"/>
+                  </svg>
+                  <span>Đăng nhập bằng Google</span>
+                </>
+              )}
             </button>
 
             <div className="auth-divider">

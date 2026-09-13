@@ -41,41 +41,41 @@ export const StudentSchedules = () => {
       const classIds = (memberData || []).map((m) => m.class_id);
 
       if (classIds.length > 0) {
-        // Fetch schedules for these classes
-        const { data: schList, error: sErr } = await supabaseClient
-          .from('schedules')
-          .select(`
-            id,
-            class_id,
-            title,
-            start_time,
-            end_time,
-            meeting_url,
-            status,
-            classes (id, name, subject)
-          `)
-          .in('class_id', classIds)
-          .order('start_time', { ascending: true });
+        // Fetch schedules and attendance records in parallel
+        const [schListRes, attListRes] = await Promise.all([
+          supabaseClient
+            .from('schedules')
+            .select(`
+              id,
+              class_id,
+              title,
+              start_time,
+              end_time,
+              meeting_url,
+              status,
+              classes (id, name, subject)
+            `)
+            .in('class_id', classIds)
+            .order('start_time', { ascending: true }),
+          supabaseClient
+            .from('attendance')
+            .select(`
+              id,
+              status,
+              note,
+              marked_at,
+              schedules (title, start_time, end_time),
+              classes (name, subject)
+            `)
+            .eq('student_id', user.id)
+            .order('marked_at', { ascending: false }),
+        ]);
 
-        if (sErr) throw sErr;
-        setSchedules(schList || []);
+        if (schListRes.error) throw schListRes.error;
+        if (attListRes.error) throw attListRes.error;
 
-        // Fetch attendance records for this student
-        const { data: attList, error: aErr } = await supabaseClient
-          .from('attendance')
-          .select(`
-            id,
-            status,
-            note,
-            marked_at,
-            schedules (title, start_time, end_time),
-            classes (name, subject)
-          `)
-          .eq('student_id', user.id)
-          .order('marked_at', { ascending: false });
-
-        if (aErr) throw aErr;
-        setAttendanceHistory(attList || []);
+        setSchedules(schListRes.data || []);
+        setAttendanceHistory(attListRes.data || []);
       } else {
         setSchedules([]);
         setAttendanceHistory([]);
@@ -214,7 +214,7 @@ export const StudentSchedules = () => {
               </div>
 
               {/* Right Column: Mini Calendar */}
-              <div>
+              <div style={{ position: 'sticky', top: '20px' }}>
                 <MiniCalendar
                   selectedDate={selectedDate}
                   onSelectDate={setSelectedDate}

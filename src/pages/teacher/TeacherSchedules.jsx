@@ -182,7 +182,7 @@ export const TeacherSchedules = () => {
           </div>
 
           {/* Right Column: Mini Calendar Widget */}
-          <div>
+          <div style={{ position: 'sticky', top: '20px' }}>
             <MiniCalendar
               selectedDate={selectedDate}
               onSelectDate={setSelectedDate}

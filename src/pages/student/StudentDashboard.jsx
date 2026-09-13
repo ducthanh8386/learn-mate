@@ -45,62 +45,57 @@ export const StudentDashboard = () => {
       const classIds = enrolledClasses.map((c) => c.id);
 
       if (classIds.length > 0) {
-        // 2. Next Upcoming Schedule
-        const { data: nextSch } = await supabaseClient
-          .from('schedules')
-          .select('id, title, class_id, start_time, end_time, meeting_link, classes(name)')
-          .in('class_id', classIds)
-          .gte('end_time', now.toISOString())
-          .order('start_time', { ascending: true })
-          .limit(1);
+        // 2. Fetch all student dashboard datasets concurrently in parallel
+        const [nextSchRes, assignRes, attRes, invRes] = await Promise.all([
+          supabaseClient
+            .from('schedules')
+            .select('id, title, class_id, start_time, end_time, meeting_url, classes(name)')
+            .in('class_id', classIds)
+            .gte('end_time', now.toISOString())
+            .order('start_time', { ascending: true })
+            .limit(1),
+          supabaseClient
+            .from('assignments')
+            .select(`
+              id,
+              title,
+              class_id,
+              deadline,
+              max_score,
+              classes (name),
+              assignment_submissions (id, status)
+            `)
+            .in('class_id', classIds)
+            .order('deadline', { ascending: true }),
+          supabaseClient
+            .from('quiz_attempts')
+            .select(`
+              id,
+              score,
+              status,
+              submitted_at,
+              quizzes (title, pass_score, classes(name))
+            `)
+            .eq('student_id', user.id)
+            .order('submitted_at', { ascending: false })
+            .limit(4),
+          supabaseClient
+            .from('tuition_invoices')
+            .select('id, status')
+            .eq('student_id', user.id)
+            .neq('status', 'paid'),
+        ]);
 
-        setNextSchedule(nextSch?.[0] || null);
+        setNextSchedule(nextSchRes.data?.[0] || null);
 
-        // 3. Pending Assignments (Not submitted yet)
-        const { data: assignList } = await supabaseClient
-          .from('assignments')
-          .select(`
-            id,
-            title,
-            class_id,
-            deadline,
-            max_score,
-            classes (name),
-            assignment_submissions (id, status)
-          `)
-          .in('class_id', classIds)
-          .order('deadline', { ascending: true });
-
-        const unsubmitted = (assignList || []).filter((a) => {
+        const unsubmitted = (assignRes.data || []).filter((a) => {
           const sub = a.assignment_submissions?.[0];
           return !sub;
         });
         setPendingAssignments(unsubmitted.slice(0, 4));
 
-        // 4. Recent Quiz Attempts
-        const { data: attList } = await supabaseClient
-          .from('quiz_attempts')
-          .select(`
-            id,
-            score,
-            status,
-            submitted_at,
-            quizzes (title, pass_score, classes(name))
-          `)
-          .eq('student_id', user.id)
-          .order('submitted_at', { ascending: false })
-          .limit(4);
-
-        setRecentQuizAttempts(attList || []);
-
-        // 5. Unpaid Tuition
-        const { data: invList } = await supabaseClient
-          .from('tuition_invoices')
-          .select('id, status')
-          .eq('student_id', user.id)
-          .neq('status', 'paid');
-
-        setUnpaidTuitionCount(invList?.length || 0);
+        setRecentQuizAttempts(attRes.data || []);
+        setUnpaidTuitionCount(invRes.data?.length || 0);
       }
     } catch (err) {
       console.error('Error loading student dashboard:', err);
@@ -228,7 +223,7 @@ export const StudentDashboard = () => {
       )}
 
       {/* Grid: Pending Assignments & Recent Quiz Results */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
         
         {/* Pending Homework */}
         <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>

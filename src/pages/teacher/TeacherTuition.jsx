@@ -54,13 +54,25 @@ export const TeacherTuition = () => {
       if (targetClassId) {
         if (!selectedClassId) setSelectedClassId(targetClassId);
 
-        // Fetch students of this class
-        const { data: members } = await supabaseClient
-          .from('class_members')
-          .select('student_id, profiles:student_id (id, full_name, phone)')
-          .eq('class_id', targetClassId);
+        // Fetch students and invoices of this class in parallel
+        const [membersRes, invRes] = await Promise.all([
+          supabaseClient
+            .from('class_members')
+            .select('student_id, profiles:student_id (id, full_name, phone)')
+            .eq('class_id', targetClassId),
+          supabaseClient
+            .from('tuition_invoices')
+            .select(`
+              *,
+              profiles:student_id (full_name, phone)
+            `)
+            .eq('class_id', targetClassId)
+            .order('created_at', { ascending: false }),
+        ]);
 
-        const students = (members || []).map((m) => {
+        if (invRes.error) throw invRes.error;
+
+        const students = (membersRes.data || []).map((m) => {
           const rawProf = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
           return {
             id: m.student_id,
@@ -70,19 +82,7 @@ export const TeacherTuition = () => {
         });
         setClassStudents(students);
         if (students.length > 0 && !singleStudentId) setSingleStudentId(students[0].id);
-
-        // Fetch invoices
-        const { data: invList, error: invErr } = await supabaseClient
-          .from('tuition_invoices')
-          .select(`
-            *,
-            profiles:student_id (full_name, phone)
-          `)
-          .eq('class_id', targetClassId)
-          .order('created_at', { ascending: false });
-
-        if (invErr) throw invErr;
-        setInvoices(invList || []);
+        setInvoices(invRes.data || []);
       }
     } catch (err) {
       console.error('Error fetching tuition data:', err);

@@ -296,7 +296,9 @@ export const StudentQuizTake = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '16px 24px',
+        flexWrap: 'wrap',
+        gap: '12px',
+        padding: '16px 20px',
         backgroundColor: 'var(--bg-surface)',
         border: '1px solid var(--border-subtle)',
         borderRadius: 'var(--radius-lg)'

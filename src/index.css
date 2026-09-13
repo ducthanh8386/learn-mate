@@ -222,6 +222,26 @@ button, input, select, textarea {
   }
 }
 
+/* Responsive Multi-column Layouts */
+.course-view-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.grid-responsive-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .course-view-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
 
 /* Glassmorphic Elements */
 .glass-card {

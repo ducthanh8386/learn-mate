@@ -61,35 +61,36 @@ export const TeacherStudents = () => {
       if (targetClassId) {
         if (selectedClassId !== targetClassId) setSelectedClassId(targetClassId);
 
-        // Fetch students enrolled in this class
-        const { data: memberList, error: mErr } = await supabaseClient
-          .from('class_members')
-          .select(`
-            joined_at,
-            student_id,
-            profiles:student_id (id, full_name, avatar_url, phone, is_active)
-          `)
-          .eq('class_id', targetClassId);
+        // Fetch students, attendance, quizzes, and tuition concurrently in parallel
+        const [membersRes, attRes, quizRes, invRes] = await Promise.all([
+          supabaseClient
+            .from('class_members')
+            .select(`
+              joined_at,
+              student_id,
+              profiles:student_id (id, full_name, avatar_url, phone, is_active)
+            `)
+            .eq('class_id', targetClassId),
+          supabaseClient
+            .from('attendance')
+            .select('student_id, status')
+            .eq('class_id', targetClassId),
+          supabaseClient
+            .from('quiz_attempts')
+            .select('student_id, score, status, quizzes!inner(class_id)')
+            .eq('quizzes.class_id', targetClassId),
+          supabaseClient
+            .from('tuition_invoices')
+            .select('student_id, status, amount_due, amount_paid')
+            .eq('class_id', targetClassId),
+        ]);
 
-        if (mErr) throw mErr;
+        if (membersRes.error) throw membersRes.error;
 
-        // Fetch attendance stats for this class
-        const { data: attList } = await supabaseClient
-          .from('attendance')
-          .select('student_id, status')
-          .eq('class_id', targetClassId);
-
-        // Fetch quiz scores for students in this class
-        const { data: quizAttempts } = await supabaseClient
-          .from('quiz_attempts')
-          .select('student_id, score, status, quizzes!inner(class_id)')
-          .eq('quizzes.class_id', targetClassId);
-
-        // Fetch tuition status for students in this class
-        const { data: invList } = await supabaseClient
-          .from('tuition_invoices')
-          .select('student_id, status, amount_due, amount_paid')
-          .eq('class_id', targetClassId);
+        const memberList = membersRes.data || [];
+        const attList = attRes.data || [];
+        const quizAttempts = quizRes.data || [];
+        const invList = invRes.data || [];
 
         // Aggregate stats per student
         const enrichedStudents = (memberList || []).map((m) => {

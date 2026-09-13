@@ -328,7 +328,7 @@ export const CreateScheduleModal = ({
             placeholder="VD: Buổi 1: Luyện đề thi thử Toán học kỳ 1"
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '12px' }}>
             <FormField
               id="schedule-start-time"
               label="Bắt đầu lúc"
