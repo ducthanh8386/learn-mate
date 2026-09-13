@@ -22,6 +22,9 @@ export default defineConfig({
             if (id.includes('xlsx')) {
               return 'vendor-xlsx';
             }
+            if (id.includes('zod') || id.includes('papaparse')) {
+              return 'vendor-quiz-import';
+            }
           }
         },
       },

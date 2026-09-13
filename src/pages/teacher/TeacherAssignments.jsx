@@ -280,6 +280,24 @@ export const TeacherAssignments = () => {
                   </div>
                 </div>
 
+                {item.attachment_url && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={async () => {
+                      try {
+                        const signedUrl = await getSignedDownloadUrl(supabaseClient, 'materials', item.attachment_url);
+                        window.open(signedUrl, '_blank');
+                      } catch (err) {
+                        alert('Không thể mở file đính kèm: ' + err.message);
+                      }
+                    }}
+                    style={{ width: '100%', justifyContent: 'center', gap: '6px', fontSize: '0.8125rem' }}
+                  >
+                    <Download size={14} /> Tải đề bài đã đính kèm
+                  </button>
+                )}
+
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={() => openSubmissionsReview(item)}

@@ -3,5 +3,6 @@ export { ErrorState } from './ErrorState';
 export { SkeletonBox, SkeletonStats, SkeletonTable, SkeletonCardGrid, SkeletonTimetable } from './SkeletonLoader';
 export { PageLoadingFallback } from './PageLoadingFallback';
 export { LogoIcon, LogoBadge } from './Logo';
+export { ErrorBoundary } from './ErrorBoundary';
 
 

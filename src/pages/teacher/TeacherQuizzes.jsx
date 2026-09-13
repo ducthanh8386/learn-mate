@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAppAuth } from '../../context/AuthContext';
 import { QuestionEditorModal } from '../../components/quiz/QuestionEditorModal';
 import { QuizBuilderModal } from '../../components/quiz/QuizBuilderModal';
+import { ImportQuizModal } from '../../components/quiz/ImportQuizModal';
 import { 
   FileText, 
   HelpCircle, 
@@ -12,7 +13,8 @@ import {
   Layers, 
   FolderOpen,
   Filter,
-  Eye
+  Eye,
+  Upload
 } from 'lucide-react';
 
 export const TeacherQuizzes = () => {
@@ -28,6 +30,7 @@ export const TeacherQuizzes = () => {
 
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const fetchCourses = async () => {
     try {
@@ -124,7 +127,15 @@ export const TeacherQuizzes = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setIsImportModalOpen(true)}
+            disabled={!selectedCourseId}
+            title="Import câu hỏi từ file JSON/CSV do AI tạo"
+          >
+            <Upload size={16} /> Import từ file
+          </button>
           <button
             className="btn btn-secondary"
             onClick={() => setIsQuestionModalOpen(true)}
@@ -363,6 +374,15 @@ export const TeacherQuizzes = () => {
             classId={selectedCourse.class_id}
             onSaved={fetchData}
           />
+          {isImportModalOpen && (
+            <ImportQuizModal
+              isOpen={isImportModalOpen}
+              onClose={() => setIsImportModalOpen(false)}
+              courseId={selectedCourse.id}
+              classId={selectedCourse.class_id}
+              onSaved={fetchData}
+            />
+          )}
         </>
       )}
     </div>

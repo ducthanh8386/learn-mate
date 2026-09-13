@@ -15,6 +15,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { SkeletonStats } from '../../components/common';
 import { TutorApplicationModal } from './TutorApplicationModal';
 
 export const StudentDashboard = () => {
@@ -140,42 +141,46 @@ export const StudentDashboard = () => {
       </div>
 
       {/* Top 3 Metric Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>LỚP ĐANG HỌC</span>
-            <GraduationCap size={18} color="var(--primary-500)" />
+      {loading ? (
+        <SkeletonStats count={3} />
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+          <div className="glass-card" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>LỚP ĐANG HỌC</span>
+              <GraduationCap size={18} color="var(--primary-500)" />
+            </div>
+            <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '8px', color: 'var(--text-primary)' }}>
+              {classes.length}
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Lớp học đã tham gia</span>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '8px', color: 'var(--text-primary)' }}>
-            {classes.length}
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Lớp học đã tham gia</span>
-        </div>
 
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>BÀI TẬP CẦN NỘP</span>
-            <Clock size={18} color={pendingAssignments.length > 0 ? 'var(--warning-500)' : 'var(--success-500)'} />
+          <div className="glass-card" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>BÀI TẬP CẦN NỘP</span>
+              <Clock size={18} color={pendingAssignments.length > 0 ? 'var(--warning-500)' : 'var(--success-500)'} />
+            </div>
+            <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '8px', color: pendingAssignments.length > 0 ? 'var(--warning-600)' : 'var(--text-primary)' }}>
+              {pendingAssignments.length}
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>bài tập chưa hoàn thành</span>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '8px', color: pendingAssignments.length > 0 ? 'var(--warning-600)' : 'var(--text-primary)' }}>
-            {pendingAssignments.length}
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>bài tập chưa hoàn thành</span>
-        </div>
 
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>HỌC PHÍ</span>
-            <CreditCard size={18} color={unpaidTuitionCount > 0 ? 'var(--danger-500)' : 'var(--success-500)'} />
+          <div className="glass-card" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>HỌC PHÍ</span>
+              <CreditCard size={18} color={unpaidTuitionCount > 0 ? 'var(--danger-500)' : 'var(--success-500)'} />
+            </div>
+            <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '8px', color: unpaidTuitionCount > 0 ? 'var(--danger-600)' : 'var(--success-600)' }}>
+              {unpaidTuitionCount > 0 ? `${unpaidTuitionCount} Kì chưa đóng` : 'Đã đóng đủ'}
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {unpaidTuitionCount > 0 ? 'Cần thanh toán sớm' : 'Không có nợ học phí'}
+            </span>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '8px', color: unpaidTuitionCount > 0 ? 'var(--danger-600)' : 'var(--success-600)' }}>
-            {unpaidTuitionCount > 0 ? `${unpaidTuitionCount} Kì chưa đóng` : 'Đã đóng đủ'}
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {unpaidTuitionCount > 0 ? 'Cần thanh toán sớm' : 'Không có nợ học phí'}
-          </span>
         </div>
-      </div>
+      )}
 
       {/* Next Upcoming Live Banner */}
       {nextSchedule && (

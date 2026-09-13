@@ -98,10 +98,21 @@ export const StudentAssignments = () => {
 
   const openSubmitModal = (assign) => {
     setActiveAssignmentForSubmit(assign);
-    const existingSub = assign.assignment_submissions?.find((s) => true);
+    const existingSub = assign.assignment_submissions?.[0];
     setTextContent(existingSub?.text_content || '');
     setFiles([]);
     setSubmitError(null);
+  };
+
+  // Tải file đính kèm đề bài của gia sư (bucket: materials)
+  const handleDownloadAttachment = async (filePath) => {
+    try {
+      const signedUrl = await getSignedDownloadUrl(supabaseClient, 'materials', filePath);
+      window.open(signedUrl, '_blank');
+    } catch (err) {
+      console.error('Cannot open attachment:', err);
+      alert('Không thể mở file đính kèm. Vui lòng thử lại.');
+    }
   };
 
   const handleSubmitAssignment = async (e) => {
@@ -276,6 +287,18 @@ export const StudentAssignments = () => {
                       </div>
                     )}
 
+                    {/* File đề bài của gia sư */}
+                    {item.attachment_url && (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleDownloadAttachment(item.attachment_url)}
+                        style={{ width: '100%', justifyContent: 'center', gap: '6px' }}
+                      >
+                        <Download size={14} />
+                        <span>Tải đề bài (file đính kèm của thầy/cô)</span>
+                      </button>
+                    )}
+
                     <button
                       className={`btn btn-sm ${!canSubmit && !isSubmitted ? 'btn-secondary' : isGraded ? 'btn-secondary' : 'btn-primary'}`}
                       onClick={() => openSubmitModal(item)}
@@ -411,6 +434,37 @@ export const StudentAssignments = () => {
                   Nhập nội dung văn bản và/hoặc tải lên file bài làm
                 </p>
               </div>
+
+              {/* File đề bài đính kèm của gia sư */}
+              {activeAssignmentForSubmit?.attachment_url && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    backgroundColor: 'var(--primary-50)',
+                    border: '1px solid var(--primary-100)',
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '10px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={16} color="var(--primary-500)" />
+                    <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--primary-700)' }}>
+                      File đề bài của thầy/cô
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => handleDownloadAttachment(activeAssignmentForSubmit.attachment_url)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}
+                  >
+                    <Download size={14} /> Tải về xem
+                  </button>
+                </div>
+              )}
 
               {activeAssignmentForSubmit?.deadline && new Date(activeAssignmentForSubmit.deadline) < new Date() && (
                 <div style={{

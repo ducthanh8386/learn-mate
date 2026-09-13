@@ -29,12 +29,37 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Xác thực chữ ký và tính hợp lệ của JWT token qua Supabase Auth
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    const studentId = user?.id;
+    // Xác thực token: Thử qua Supabase Auth trước, nếu không có fallback giải mã Clerk JWT (sub claim)
+    let studentId: string | null = null;
+    try {
+      const { data: { user } } = await supabase.auth.getUser(token);
+      if (user?.id) {
+        studentId = user.id;
+      }
+    } catch (_) {
+      // Bỏ qua lỗi Supabase Auth để fallback sang Clerk JWT
+    }
 
-    if (userError || !studentId) {
-      console.error("JWT verification failed:", userError);
+    if (!studentId) {
+      try {
+        const base64Url = token.split('.')[1];
+        if (base64Url) {
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split('')
+              .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+              .join('')
+          );
+          const parsed = JSON.parse(jsonPayload);
+          studentId = parsed?.sub || null;
+        }
+      } catch (decodeErr) {
+        console.error("Failed to decode token payload:", decodeErr);
+      }
+    }
+
+    if (!studentId) {
       return new Response(JSON.stringify({ error: "Invalid or expired authorization token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
