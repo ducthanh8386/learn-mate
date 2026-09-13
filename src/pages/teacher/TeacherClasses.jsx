@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppAuth } from '../../context/AuthContext';
 import { 
   Users, 
@@ -15,6 +16,7 @@ import {
 import { ErrorState, FormField } from '../../components/common';
 
 export const TeacherClasses = () => {
+  const navigate = useNavigate();
   const { supabaseClient, user } = useAppAuth();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -319,10 +321,37 @@ export const TeacherClasses = () => {
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8125rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Users size={14} />
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/teacher/students?classId=${c.id}`)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'none',
+                      border: 'none',
+                      padding: '4px 6px',
+                      margin: '-4px -6px',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.8125rem',
+                      fontWeight: '600',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--primary-50)';
+                      e.currentTarget.style.color = 'var(--primary-700)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                    }}
+                    title="Nhấp để xem danh sách & quản lý học sinh của lớp này"
+                  >
+                    <Users size={14} color="var(--primary-600)" />
                     <span>{memberCount} / {c.max_students} học sinh</span>
-                  </div>
+                  </button>
                   {c.schedule_text && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Calendar size={14} />

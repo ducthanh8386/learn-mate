@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAppAuth } from '../../context/AuthContext';
 import { exportToExcel } from '../../lib/excelExport';
 import { 
@@ -9,16 +10,20 @@ import {
   Award, 
   CreditCard, 
   X, 
-  Eye
+  Eye,
+  UserMinus,
+  AlertCircle
 } from 'lucide-react';
 import { formatCurrency } from '../../lib/formatters';
 import { ErrorState } from '../../components/common';
 
 export const TeacherStudents = () => {
   const { supabaseClient } = useAppAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const classIdParam = searchParams.get('classId');
 
   const [classes, setClasses] = useState([]);
-  const [selectedClassId, setSelectedClassId] = useState('');
+  const [selectedClassId, setSelectedClassId] = useState(classIdParam || '');
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
@@ -29,6 +34,12 @@ export const TeacherStudents = () => {
   const [studentDetail, setStudentDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  // Remove Student from Class states
+  const [studentToRemove, setStudentToRemove] = useState(null);
+  const [removingStudent, setRemovingStudent] = useState(false);
+  const [removeError, setRemoveError] = useState(null);
+  const [successToast, setSuccessToast] = useState(null);
+
   const fetchClassesAndStudents = async () => {
     try {
       setLoading(true);
@@ -38,10 +49,17 @@ export const TeacherStudents = () => {
         .order('created_at', { ascending: false });
 
       setClasses(classList || []);
-      const targetClassId = selectedClassId || classList?.[0]?.id;
+
+      // Determine active target class
+      let targetClassId = selectedClassId;
+      if (!targetClassId || !classList?.some((c) => c.id === targetClassId)) {
+        targetClassId = (classIdParam && classList?.some((c) => c.id === classIdParam))
+          ? classIdParam
+          : classList?.[0]?.id || '';
+      }
 
       if (targetClassId) {
-        if (!selectedClassId) setSelectedClassId(targetClassId);
+        if (selectedClassId !== targetClassId) setSelectedClassId(targetClassId);
 
         // Fetch students enrolled in this class
         const { data: memberList, error: mErr } = await supabaseClient
@@ -116,6 +134,8 @@ export const TeacherStudents = () => {
         });
 
         setStudents(enrichedStudents);
+      } else {
+        setStudents([]);
       }
     } catch (err) {
       console.error('Error fetching students:', err);
@@ -128,6 +148,11 @@ export const TeacherStudents = () => {
   useEffect(() => {
     fetchClassesAndStudents();
   }, [selectedClassId, supabaseClient]);
+
+  const handleClassChange = (newClassId) => {
+    setSelectedClassId(newClassId);
+    setSearchParams({ classId: newClassId });
+  };
 
   const openStudentDetail = async (student) => {
     setActiveStudent(student);
@@ -169,6 +194,39 @@ export const TeacherStudents = () => {
     }
   };
 
+  // Remove student from class
+  const handleConfirmRemoveStudent = async () => {
+    if (!studentToRemove || !selectedClassId) return;
+    setRemovingStudent(true);
+    setRemoveError(null);
+
+    try {
+      const { error } = await supabaseClient
+        .from('class_members')
+        .delete()
+        .eq('class_id', selectedClassId)
+        .eq('student_id', studentToRemove.id);
+
+      if (error) throw error;
+
+      const studentName = studentToRemove.profile?.full_name || 'Học sinh';
+      setStudents((prev) => prev.filter((st) => st.id !== studentToRemove.id));
+      setStudentToRemove(null);
+
+      if (activeStudent?.id === studentToRemove.id) {
+        setActiveStudent(null);
+      }
+
+      setSuccessToast(`Đã xóa học sinh ${studentName} khỏi lớp học thành công.`);
+      setTimeout(() => setSuccessToast(null), 4000);
+    } catch (err) {
+      console.error('Error removing student from class:', err);
+      setRemoveError(err.message || 'Không thể xóa học sinh khỏi lớp.');
+    } finally {
+      setRemovingStudent(false);
+    }
+  };
+
   // Excel Export Handlers
   const handleExportRoster = () => {
     const className = classes.find((c) => c.id === selectedClassId)?.name || 'Lop';
@@ -194,8 +252,33 @@ export const TeacherStudents = () => {
     );
   }, [students, searchQuery]);
 
+  const currentClassName = classes.find((c) => c.id === selectedClassId)?.name || 'lớp học';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* Toast thông báo thành công */}
+      {successToast && (
+        <div style={{
+          position: 'fixed',
+          top: '24px',
+          right: '24px',
+          backgroundColor: 'var(--success-600)',
+          color: '#ffffff',
+          padding: '12px 20px',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          zIndex: 1000,
+          fontSize: '0.875rem',
+          fontWeight: '600'
+        }}>
+          <CheckCircle2 size={18} />
+          <span>{successToast}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -203,7 +286,7 @@ export const TeacherStudents = () => {
             Hồ Sơ Học Sinh & Báo Cáo
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', marginTop: '4px' }}>
-            Theo dõi tiến độ học tập, kết quả bài thi, điểm danh và xuất báo cáo Excel cho phụ huynh.
+            Theo dõi tiến độ học tập, kết quả bài thi, điểm danh, quản lý thành viên và xuất báo cáo Excel.
           </p>
         </div>
 
@@ -233,7 +316,7 @@ export const TeacherStudents = () => {
             <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-secondary)' }}>Chọn Lớp:</span>
             <select
               value={selectedClassId}
-              onChange={(e) => setSelectedClassId(e.target.value)}
+              onChange={(e) => handleClassChange(e.target.value)}
               style={{
                 padding: '6px 12px',
                 borderRadius: 'var(--radius-sm)',
@@ -295,7 +378,7 @@ export const TeacherStudents = () => {
                 <th style={{ padding: '12px 16px' }}>Chuyên cần</th>
                 <th style={{ padding: '12px 16px' }}>Điểm kiểm tra TB</th>
                 <th style={{ padding: '12px 16px' }}>Học phí</th>
-                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Hồ sơ</th>
+                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Hành động</th>
               </tr>
             </thead>
             <tbody>
@@ -352,13 +435,27 @@ export const TeacherStudents = () => {
                   </td>
 
                   <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => openStudentDetail(st)}
-                      style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-                    >
-                      <Eye size={14} /> Xem chi tiết
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => openStudentDetail(st)}
+                        style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                        title="Xem chi tiết hồ sơ học tập"
+                      >
+                        <Eye size={14} /> Xem chi tiết
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => {
+                          setStudentToRemove(st);
+                          setRemoveError(null);
+                        }}
+                        style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+                        title="Xóa / Mời học sinh ra khỏi lớp"
+                      >
+                        <UserMinus size={14} /> Xóa
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -488,11 +585,145 @@ export const TeacherStudents = () => {
                   )}
                 </div>
 
+                {/* Footer Modal Actions */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: '12px',
+                  paddingTop: '16px',
+                  borderTop: '1px solid var(--border-subtle)'
+                }}>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    onClick={() => {
+                      setStudentToRemove(activeStudent);
+                      setRemoveError(null);
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <UserMinus size={14} /> Mời học sinh ra khỏi lớp
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setActiveStudent(null)}
+                  >
+                    Đóng
+                  </button>
+                </div>
+
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Xác Nhận Xóa Học Sinh Khỏi Lớp */}
+      {studentToRemove && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 110,
+          padding: '20px'
+        }}>
+          <div className="glass-card" style={{
+            maxWidth: '480px',
+            width: '100%',
+            backgroundColor: 'var(--bg-surface)',
+            padding: '28px',
+            position: 'relative',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '16px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--danger-50)',
+                color: 'var(--danger-600)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <AlertCircle size={22} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                  Xóa Học Sinh Khỏi Lớp?
+                </h3>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  Bạn có chắc muốn xóa học sinh <strong style={{ color: 'var(--text-primary)' }}>{studentToRemove.profile?.full_name}</strong> ra khỏi lớp <strong style={{ color: 'var(--text-primary)' }}>{currentClassName}</strong>?
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              backgroundColor: 'var(--bg-subtle)',
+              padding: '12px 16px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-subtle)',
+              marginBottom: '20px',
+              fontSize: '0.8125rem',
+              color: 'var(--text-secondary)',
+              lineHeight: '1.5'
+            }}>
+              ⚠️ <strong>Lưu ý:</strong> Học sinh này sẽ không thể tiếp tục truy cập bài giảng, tài liệu, lịch học và bài tập của lớp này. Tài khoản người dùng của học sinh vẫn được bảo toàn trong hệ thống.
+            </div>
+
+            {removeError && (
+              <div style={{
+                backgroundColor: 'var(--danger-50)',
+                color: 'var(--danger-600)',
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.8125rem',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <AlertCircle size={15} />
+                <span>{removeError}</span>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setStudentToRemove(null);
+                  setRemoveError(null);
+                }}
+                disabled={removingStudent}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={handleConfirmRemoveStudent}
+                disabled={removingStudent}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <UserMinus size={15} />
+                {removingStudent ? 'Đang xóa...' : 'Xác nhận xóa'}
+              </button>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 };
+
