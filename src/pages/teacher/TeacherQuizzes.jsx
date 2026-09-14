@@ -141,14 +141,14 @@ export const TeacherQuizzes = () => {
             onClick={() => setIsQuestionModalOpen(true)}
             disabled={!selectedCourseId}
           >
-            <Plus size={16} /> + Thêm Câu hỏi
+            <Plus size={16} /> Thêm Câu hỏi
           </button>
           <button
             className="btn btn-primary"
             onClick={() => setIsQuizModalOpen(true)}
             disabled={!selectedCourseId}
           >
-            <Plus size={16} /> + Tạo Đề Kiểm Tra
+            <Plus size={16} /> Tạo Đề Kiểm Tra
           </button>
         </div>
       </div>

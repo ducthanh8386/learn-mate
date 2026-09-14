@@ -204,7 +204,7 @@ export const TeacherTuition = () => {
           onClick={() => setIsCreateOpen(true)}
           disabled={!selectedClassId}
         >
-          <Plus size={16} /> + Tạo Hóa Đơn Học Phí
+          <Plus size={16} /> Tạo Hóa Đơn Học Phí
         </button>
       </div>
 

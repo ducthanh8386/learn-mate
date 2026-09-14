@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { SkeletonStats } from '../../components/common';
+
 export const TeacherDashboard = () => {
   const { profile, supabaseClient } = useAppAuth();
 
@@ -72,7 +74,7 @@ export const TeacherDashboard = () => {
       ] = await Promise.all([
         supabaseClient
           .from('class_members')
-          .select('student_id', { count: 'exact', head: true })
+          .select('student_id', { count: 'exact' })
           .in('class_id', classIds),
         supabaseClient
           .from('schedules')
@@ -96,7 +98,7 @@ export const TeacherDashboard = () => {
             submitted_at,
             assignments!inner (id, title, max_score, class_id, classes(name)),
             profiles:student_id (full_name)
-          `)
+          `, { count: 'exact' })
           .in('assignments.class_id', classIds)
           .eq('status', 'SUBMITTED')
           .order('submitted_at', { ascending: true })
@@ -129,10 +131,18 @@ export const TeacherDashboard = () => {
 
       setUnpaidInvoices(unpaid.slice(0, 5));
 
+      const totalStudents = studentCountRes.count !== null && studentCountRes.count !== undefined 
+        ? studentCountRes.count 
+        : (studentCountRes.data?.length || 0);
+
+      const pendingGradingCount = pendingSubRes.count !== null && pendingSubRes.count !== undefined 
+        ? pendingSubRes.count 
+        : (pendingSubRes.data?.length || 0);
+
       setStats({
         classCount: classesData?.length || 0,
-        studentCount: studentCount || 0,
-        pendingGradingCount: subList?.length || 0,
+        studentCount: totalStudents,
+        pendingGradingCount,
         totalTuitionCollected: collected,
         totalTuitionPending: pending,
       });
@@ -171,51 +181,55 @@ export const TeacherDashboard = () => {
       </div>
 
       {/* Top 4 Quick Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>LỚP ĐANG DẠY</span>
-            <Users size={18} color="var(--primary-500)" />
+      {loading ? (
+        <SkeletonStats count={4} />
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+          <div className="glass-card" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>LỚP ĐANG DẠY</span>
+              <Users size={18} color="var(--primary-500)" />
+            </div>
+            <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '8px', color: 'var(--text-primary)' }}>
+              {stats.classCount}
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{stats.studentCount} học sinh đang học</span>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '8px', color: 'var(--text-primary)' }}>
-            {stats.classCount}
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{stats.studentCount} học sinh đang học</span>
-        </div>
 
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>BÀI TẬP CẦN CHẤM</span>
-            <AlertCircle size={18} color={stats.pendingGradingCount > 0 ? 'var(--warning-500)' : 'var(--success-500)'} />
+          <div className="glass-card" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>BÀI TẬP CẦN CHẤM</span>
+              <AlertCircle size={18} color={stats.pendingGradingCount > 0 ? 'var(--warning-500)' : 'var(--success-500)'} />
+            </div>
+            <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '8px', color: stats.pendingGradingCount > 0 ? 'var(--warning-600)' : 'var(--text-primary)' }}>
+              {stats.pendingGradingCount}
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>bài nộp chưa chấm điểm</span>
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: '800', marginTop: '8px', color: stats.pendingGradingCount > 0 ? 'var(--warning-600)' : 'var(--text-primary)' }}>
-            {stats.pendingGradingCount}
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>bài nộp chưa chấm điểm</span>
-        </div>
 
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>ĐÃ THU THÁNG NÀY</span>
-            <TrendingUp size={18} color="var(--success-500)" />
+          <div className="glass-card" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>ĐÃ THU THÁNG NÀY</span>
+              <TrendingUp size={18} color="var(--success-500)" />
+            </div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', marginTop: '8px', color: 'var(--success-600)' }}>
+              {stats.totalTuitionCollected.toLocaleString('vi-VN')} đ
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Học phí đã nhận</span>
           </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: '800', marginTop: '8px', color: 'var(--success-600)' }}>
-            {stats.totalTuitionCollected.toLocaleString('vi-VN')} đ
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Học phí đã nhận</span>
-        </div>
 
-        <div className="glass-card" style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>HỌC PHÍ CHƯA THU</span>
-            <Receipt size={18} color="var(--primary-500)" />
+          <div className="glass-card" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: '600' }}>HỌC PHÍ CHƯA THU</span>
+              <Receipt size={18} color="var(--primary-500)" />
+            </div>
+            <div style={{ fontSize: '1.5rem', fontWeight: '800', marginTop: '8px', color: 'var(--primary-600)' }}>
+              {stats.totalTuitionPending.toLocaleString('vi-VN')} đ
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Cần thu từ học sinh</span>
           </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: '800', marginTop: '8px', color: 'var(--primary-600)' }}>
-            {stats.totalTuitionPending.toLocaleString('vi-VN')} đ
-          </div>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Cần thu từ học sinh</span>
         </div>
-      </div>
+      )}
 
       {/* 4 Core SRS Blocks (2x2 Grid) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
