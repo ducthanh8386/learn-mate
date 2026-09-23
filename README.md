@@ -1,4 +1,4 @@
-﻿# 🎓 Learn Mate — Sổ Gia Sư & Quản Lý Lớp Học Thông Minh
+# 🎓 Learn Mate — Sổ Gia Sư & Quản Lý Lớp Học Thông Minh
 
 <div align="center">
 
